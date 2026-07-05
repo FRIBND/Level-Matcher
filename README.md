@@ -16,7 +16,6 @@ Developed and refined through daily evaluation tasks at the Nuclear Data Group a
   - **`Feature_Engineer.py`**: Reorganized label generation, clarified veto and rescue logic, and moved scoring and synthetic-data behavior fully under `Scoring_Config`.
   - **`Level_Matcher.py`**: Added user-facing inference dataset selection, tuned XGBoost on synthetic data only, and updated the documentation to describe the inference-first workflow.
 
-
 - **2026-04-17** — Applied to the first real-world evaluation task for $^{34}\text{Cl}$.
   - Pairwise inference across 27,615 candidate pairs from $^{32}\text{S}(p,\gamma)^{34}\text{Cl}$ and $^{33}\text{S}(p,p)$ resonance datasets.
   - Detached subprocess architecture adopted to isolate gradient boosting training from the IDE event loop, eliminating VS Code UI freeze events.
