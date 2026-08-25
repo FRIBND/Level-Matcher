@@ -2,7 +2,7 @@
 
 ## Overview
 
-Level Matcher is a physics-informed nuclear level matching system for Evaluated Nuclear Structure Data File (ENSDF) workflows. It is designed to parse raw ENSDF files, build standardized JSON datasets, and perform pairwise and clustered inference on real-world nuclear level schemes that do not have ground-truth labels. Model training is performed only on synthetic, physics-generated examples so that real evaluation datasets remain reserved for inference.
+Level Matcher is a physics-informed nuclear level matching system for Evaluated Nuclear Structure Data File (ENSDF) workflows. It is designed to parse ENSDF raw files or JSON datasets, perform pairwise and clustered inference on real-world nuclear level schemes that do not have ground-truth labels. Model training is performed only on synthetic, physics-generated examples so that real evaluation datasets remain reserved for inference.
 
 Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB), Michigan State University.
 
