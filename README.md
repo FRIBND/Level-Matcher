@@ -15,27 +15,11 @@ Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Ma
 
 ## Development Timeline
 
-- **2026-04-19** — Adapted Level-Matcher for robust operations on real-world $^{32}\text{S}(p,\gamma)^{34}\text{Cl}$ and $^{33}\text{S}(p,p)^{34}\text{Cl}$ datasets by improving ENSDF parsing accuracy `Dataset_Parser`, physics-informed scoring logic and feature engineering `Feature_Engineer`, and inference workflow `Level_Matcher`.
-  - Detached subprocess architecture adopted to isolate gradient boosting training from the IDE event loop, eliminating VS Code UI freeze events.
-
-- **2026-01-24** — Refined for diagnostic rigor and modularized for public release.
-  - 80/20 training-validation split with early stopping (patience = 50 rounds).
-  - Five-panel diagnostic visualization: RMSE, MAE, and LogLoss learning curves; feature importance (Gain); overfitting analysis (train-validation RMSE gap).
-  - Schema standardization across all ingested datasets.
-  - Public-facing consistency reporting module integrated.
-
-- **2026-01-05** — Expanded into a full physics-informed matching pipeline.
-  - Regex-based ENSDF-to-JSON ingestion with schema validation.
-  - Physics-informed feature engineering: five nuclear descriptors with hard-veto logic for quantum number violations.
-  - Dual matching engine: XGBoost and LightGBM gradient-boosted ensembles for pairwise inference.
-  - Graph-based, clique-constrained clustering for mutually consistent level groupings.
-  - High-resolution level scheme visualization for visual audit.
-
-- **2025-10-20** — Initial prototype as a LightGBM ranking model.
-  - Repository: [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
+- 2026-04-19: Tested for robust, operational use in real-world ENSDF evaluation workflows on $^{34}\text{Cl}$ datasets by improving feature engineering configurable parameters and model training and model training diagnostics and validation metrics.
+- 2026-01-05: Expanded with Dataset Parser, Feature Engineer, Level Matcher, Level Clusterer, and Combined Visualizer modules for a complete end-to-end pipeline.
+- 2025-10-20: The initial prototype based on a LightGBM ranking model at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
 
 
----
 
 ## High-Level Structure and Workflow Explanation
 
@@ -195,7 +179,7 @@ Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
 
 ## 5. Graph-Based Clustering Algorithm
 
-`Level_Clusterer.py` runs deterministic constrained graph partitioning (not unsupervised ML clustering): candidate pairs with probability ≥ 0.15 are processed greedily in descending order.
+`Level_Clusterer.py` runs deterministic constrained graph partitioning: candidate pairs with probability ≥ 0.15 are processed greedily in descending order.
 - **Dataset Uniqueness**: Each cluster holds at most one level per dataset; ambiguous levels may join multiple clusters.
 - **Mutual Consistency (Clique)**: Clusters merge only when every cross-member pair clears the threshold — blocks weak "chain" merges.
 - **Anchor Selection**: Cluster anchor = member with smallest $\sigma_E$; clusters are sorted by average energy and written to `outputs/clustering/`.
