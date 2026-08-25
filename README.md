@@ -1,23 +1,21 @@
-**Level Matcher**: Part of the AI/ML Technical Innovation at the FRIB Nuclear Data Group (nucleardata@frib.msu.edu).
+# Level-Matcher
+
+Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility for Rare Isotope Beams (nucleardata@frib.msu.edu). Supported by the U.S. Department of Energy, Office of Science, Office of Nuclear Physics under Award Number DE-SC0016948.
 
 ## Overview
 
-Level Matcher is a physics-informed nuclear level matching system for Evaluated Nuclear Structure Data File (ENSDF) workflows. It is designed to parse ENSDF raw files or JSON datasets, perform pairwise and clustered inference on real-world nuclear level schemes that do not have ground-truth labels. Model training is performed only on synthetic, physics-generated examples so that real evaluation datasets remain reserved for inference.
+A physics-informed machine learning nuclear level matching tool designed for Evaluated Nuclear Structure Data File (ENSDF) workflows.
+Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB).
 
-Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB), Michigan State University.
+Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering and physics-labeled data synthesis and training and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
 
-- **Open-source prototype**: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
+- **Open-source release**: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
+
 - **Integration roadmap**: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
 ## Development Timeline
 
-- **2026-04-19** — Adapted Level-Matcher for robust, operational inference on real-world nuclear datasets by improving ENSDF parsing accuracy, physics-informed scoring logic and feature engineering, and inference workflow.
-  - **`Dataset_Parser.py`**: Corrected relative-intensity uncertainty handling, refined parsing and energy matching, and added $^{34}$Cl real ENS data files for parser and inference development.
-  - **`Feature_Engineer.py`**: Reorganized label generation, clarified veto and rescue logic, and moved scoring and synthetic-data behavior fully under `Scoring_Config`.
-  - **`Level_Matcher.py`**: Added user-facing inference dataset selection, tuned XGBoost on synthetic data only, and updated the documentation to describe the inference-first workflow.
-
-- **2026-04-17** — Applied to the first real-world evaluation task for $^{34}\text{Cl}$.
-  - Pairwise inference across 27,615 candidate pairs from $^{32}\text{S}(p,\gamma)^{34}\text{Cl}$ and $^{33}\text{S}(p,p)$ resonance datasets.
+- **2026-04-19** — Adapted Level-Matcher for robust operations on real-world $^{32}\text{S}(p,\gamma)^{34}\text{Cl}$ and $^{33}\text{S}(p,p)^{34}\text{Cl}$ datasets by improving ENSDF parsing accuracy `Dataset_Parser`, physics-informed scoring logic and feature engineering `Feature_Engineer`, and inference workflow `Level_Matcher`.
   - Detached subprocess architecture adopted to isolate gradient boosting training from the IDE event loop, eliminating VS Code UI freeze events.
 
 - **2026-01-24** — Refined for diagnostic rigor and modularized for public release.
@@ -41,28 +39,26 @@ Developed and refined through daily evaluation tasks at the Nuclear Data Group a
 
 ## High-Level Structure and Workflow Explanation
 
-The system operates as an inference-first pipeline that transforms raw ENSDF records into a unified, clique-constrained nuclear level scheme.
+Inference-first pipeline: raw ENSDF records → standardized JSON → synthetic-trained XGBoost → pairwise probabilities → clique-constrained unified level scheme.
 
 ```text
-[Raw ENSDF Logs] --> [Dataset_Parser] --> [JSON Datasets]
-                                               |
-                                               v
-[Physics Constraints] --> [Feature_Engineer] --+--> [Synthetic Training Data]
-                                               |
-                                               v
-[Training] <----------- [Level_Matcher] <------+--> [XGBoost Inference Model]
-    |                                          |
-    v                                          v
-[Diagnostic Visuals] <--- [Metrics_Visualizer] [Pairwise Inference]
-                                               |
-                                               v
-[Graph Clustering] <----- [Clique Algorithm] --+--> [Mutual Consistency Check]
-                                               |
-                                               v
-[Final Scheme] <--------- [Combined_Visualizer] --> [High-Res Level Scheme Plots]
+[Raw ENSDF] --> [Dataset_Parser] --> [data/json/]
+                                         |
+                                         v
+[Feature_Engineer] --> [5-D Feature Extraction, Scoring_Config, Label Logic]
+        |                            |
+        v                            v
+[Synthetic Training Data]    [Pairwise Inference]
+        |                            |
+        v                            v
+[XGBoost Training] <--- [Level_Matcher] --> [outputs/pairwise/]
+        |                            |
+        v                            v
+[Training_Metrics_Visualizer]  [Level_Clusterer] --> [outputs/clustering/]
+                                        |
+                                        v
+                    [Combined_Visualizer] --> [Level Scheme Plots]
 ```
-
-
 
 ---
 
@@ -176,30 +172,33 @@ Nuclear level schemes typically contain fewer than 500 levels. Algorithms like L
 
 ## 4. Physics-Informed Feature Engineering
 
-The model processes five primary features, transforming raw experimental data into nuclear physics descriptors:
+`Feature_Engineer.py` converts every candidate level pair into a 5-D feature vector (ordered: Energy, Spin, Parity, Specificity, Gamma). All scores live in $[0,1]$ and are monotonic (higher = stronger match evidence):
 
-1.  **Energy_Similarity**: Calculated using a Gaussian kernel based on the experimental $Z$-score:
-    $$\text{Energy Similarity} = \exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$$
-    where $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$.
-2.  **Spin_Similarity**: Encodes nuclear selection rules. Forbidden transitions ($|\Delta J| \ge 2$) receive an absolute zero veto.
-3.  **Parity_Similarity**: Validates parity conservation. Definite mismatches trigger a zero veto.
-4.  **Gamma_Decay_Pattern_Similarity**: Computes the cosine similarity of Gaussian-broadened gamma-ray spectra.
-5.  **Specificity**: Measures the uniqueness of a level's assignment to penalize high-multiplicity ambiguity ($\text{Specificity} = 1/\sqrt{N}$).
+1. **Energy_Similarity**: Gaussian kernel $\exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$ with $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$. `Sigma_Scale` = 0.2 (default: 1σ→82%, 2σ→45%, 3σ→17%). Missing energy → 0.0.
+2. **Spin_Similarity**: Optimistic max over all $J$ pairings. $\Delta J = 0$ firm→1.0, $\Delta J = 0$ any tentative→0.8, $\Delta J = 1$ any tentative→0.2, $\Delta J = 1$ firm→0.05, $\Delta J \ge 2$→0.0.
+3. **Parity_Similarity**: Optimistic max over all $\pi$ pairings. Same firm→1.0, same tentative→0.8, opposite tentative→0.05, opposite firm→0.0.
+4. **Specificity**: Ambiguity penalty $1/f(\text{multiplicity})$, where multiplicity = product of both levels' spin-option counts. Selectable formulas: `sqrt` (default), `linear`, `log`, `tunable`.
+5. **Gamma_Decay_Pattern_Similarity**: Greedy one-to-one γ-energy matching within 3σ. Intensity mode: overlap = average when intensities are consistent ($Z \le 3\sigma$), minimum when inconsistent; sum is normalized by the smaller total intensity (subset-robust). Falls back to energy-only match counting when intensities are missing.
 
-### 4.1 Physics Rescue Mechanism
-When quantum numbers or gamma patterns show exceptional agreement (Similarity $\ge 0.86$), the system activates a rescue protocol:
-- **Formula**: $\text{Effective Energy} = (\text{Energy Similarity})^{0.5}$
-- **Rationale**: Prevents rejection of valid matches where energy calibration differs but internal structure is identical.
+Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
+
+### 4.1 Label Logic (Veto, Rescue, and Final Formula)
+
+`calculate_label()` maps the 5 raw scores to a match probability via three adjustments plus a final product:
+
+- **Neutral Remap**: neutral spin/parity/gamma 0.5 → 0.85 (`Neutral_Remap_Factor`), preventing collapse $0.5^3 = 0.125$; energy and specificity untouched.
+- **Physics Veto**: spin $\le$ 0.04 or parity $\le$ 0.04 (definitive quantum mismatch, `Spin_Veto_Max`/`Parity_Veto_Max`) → label 0.0.
+- **Physics Rescue**: (spin ≥ 0.86 and parity ≥ 0.86) or gamma ≥ 0.86 → energy similarity$^{0.5}$ (calibration-offset rescue). Raw scores tested, so "unknown" never triggers.
+- **Final Formula**: $\text{label} = \text{clamp}\left(E_{\text{eff}} \cdot \sqrt{S_{\text{eff}} \cdot P_{\text{eff}} \cdot G_{\text{eff}}} \cdot \text{Specificity},\ 0,\ 0.999\right)$
 
 ---
 
 ## 5. Graph-Based Clustering Algorithm
 
-The system merges pairwise inferences into physical clusters using a clique-constrained graph algorithm:
-- **Dataset Uniqueness**: Strictly enforces a maximum of one level per dataset per cluster.
-- **Mutual Consistency**: All members must be pairwise compatible (forming a clique).
-- **Anchor Selection**: The level with the smallest experimental energy uncertainty ($\sigma_E$) is selected as the cluster reference.
-- **Ambiguity Support**: Levels with high uncertainty can maintain membership in multiple clusters until resolved.
+`Level_Clusterer.py` runs deterministic constrained graph partitioning (not unsupervised ML clustering): candidate pairs with probability ≥ 0.15 are processed greedily in descending order.
+- **Dataset Uniqueness**: Each cluster holds at most one level per dataset; ambiguous levels may join multiple clusters.
+- **Mutual Consistency (Clique)**: Clusters merge only when every cross-member pair clears the threshold — blocks weak "chain" merges.
+- **Anchor Selection**: Cluster anchor = member with smallest $\sigma_E$; clusters are sorted by average energy and written to `outputs/clustering/`.
 
 ---
 
@@ -208,21 +207,23 @@ The system merges pairwise inferences into physical clusters using a clique-cons
 ```text
 Level-Matcher/
 ├── Level_Matcher.py           # Main orchestration (Training, Inference, Clustering)
-├── Feature_Engineer.py        # Physics engine (Feature extraction, Rescue mechanism)
+├── Feature_Engineer.py        # Physics engine (Feature extraction, Label logic)
+├── Level_Clusterer.py         # Deterministic clique-constrained graph partitioning
 ├── Dataset_Parser.py          # Regex-based ENSDF log to JSON converter
 ├── Training_Metrics_Visualizer.py # Diagnostic suite (5-panel metrics plots)
 ├── Combined_Visualizer.py     # Visualization suite (High-res level scheme plots)
+├── Run_Pipeline.ps1           # One-command wrapper; detached ML process for VS Code safety
 ├── data/
-�?  ├── raw/                   # ENSDF source files, XREF labels, and legacy raw assets
-�?  └── json/                  # Standardized JSON datasets consumed by the pipeline
+│   ├── raw/                   # ENSDF source files and XREF labels
+│   └── json/                  # Standardized JSON datasets consumed by the pipeline
 ├── outputs/
-�?  ├── figures/               # PNG outputs (Diagnostics, Level Schemes)
-�?  ├── clustering/            # Final cluster memberships (Text reports)
-�?  └── pairwise/              # Pairwise match probabilities
+│   ├── figures/               # PNG outputs (Diagnostics, Level Schemes)
+│   ├── clustering/            # Final cluster memberships (Text reports)
+│   └── pairwise/              # Pairwise match probabilities
 ├── docs/                      # Documentation and technical reports
 ├── scripts/
-�?  ├── hyperparameter_tuning/ # Optimization and validation utilities
-�?  └── legacy/                # Experimental/archive scripts
+│   ├── hyperparameter_tuning/ # Optimization and validation utilities
+│   └── legacy/                # Experimental/archive scripts
 └── README.md                  # This file
 ```
 
@@ -230,12 +231,13 @@ Level-Matcher/
 
 ## 7. Workflow & Usage
 
-1. **Parse raw ENSDF files**: Run `Dataset_Parser.py` to scan all `.ens` files in `data/raw/` and write standardized JSON datasets to `data/json/`.
-2. **Select inference targets**: In `Level_Matcher.py`, set `inference_dataset_labels` to the dataset letters you want to match.
-3. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
-4. **Run real-world inference**: The trained model evaluates all cross-dataset level pairs for the selected real datasets and writes probabilities to `outputs/pairwise/`.
-5. **Cluster matched levels**: The graph algorithm consolidates pairwise matches into physically consistent level groups.
-6. **Review outputs**: `Combined_Visualizer.py` renders the standardized JSON datasets and clustering results for visual audit.
+1. **Run full pipeline**: `.\Run_Pipeline.ps1` executes Dataset Parser → Level Matcher (detached subprocess; logs stream to `outputs/run_log.txt`) → Combined Visualizer. Detached spawn prevents VS Code freezes.
+2. **Parse raw ENSDF files**: `Dataset_Parser.py` scans all `.ens` files in `data/raw/` and writes standardized JSON datasets to `data/json/`.
+3. **Select inference targets**: In `Level_Matcher.py`, set `inference_dataset_labels` (default `['K', 'L']`).
+4. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
+5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs above the output threshold are written to `outputs/pairwise/`.
+6. **Cluster matched levels**: `Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `outputs/clustering/`.
+7. **Review outputs**: `Combined_Visualizer.py` renders level schemes to `outputs/figures/` for visual audit.
 
 ---
 
@@ -255,4 +257,4 @@ After any code modification:
 ---
 **Maintained by**: FRIB Nuclear Data Group  
 **Status**: [In Development]
-**Version**: 2.1 (Dual Gradient Boosting Architecture)
+**Version**: 2.2 (XGBoost Architecture)
