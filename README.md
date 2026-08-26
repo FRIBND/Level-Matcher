@@ -1,23 +1,26 @@
 # Level-Matcher
 
-Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility for Rare Isotope Beams (nucleardata@frib.msu.edu). Supported by the U.S. Department of Energy, Office of Science, Office of Nuclear Physics under Award Number DE-SC0016948.
+Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility for Rare Isotope Beams (nucleardata@frib.msu.edu).
+
+Supported by the U.S. Department of Energy, Office of Science, Office of Nuclear Physics under Award Number DE-SC0016948.
 
 ## Overview
 
-A physics-informed machine learning nuclear level matching tool designed for Evaluated Nuclear Structure Data File (ENSDF) workflows.
+The first Physics-informed Machine Learning nuclear level matching tool designed for Evaluated Nuclear Structure Data File (ENSDF) workflows.
+
 Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB).
 
-Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering and gradient boosting model training and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
+Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering, gradient boosting model training, and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
 
-- **Open-source release**: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
+- Open-source release: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
 
-- **Integration roadmap**: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
+- Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
 ## Development Timeline
 
-- 2026-04-19: Tested and refined on real-world $^{34}\text{Cl}$ datasets.
-- 2026-04-17: Introduced configurable parameters for feature engineering, model training diagnostics, and validation metrics.
-- 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, clique-constrained clustering, and level-scheme visualization.
+- 2026-04-19: Tested and refined on real-world ENSDF datasets $^{34}\text{Cl}$.
+- 2026-04-17: Introduced configurable parameters for feature correlation, model training diagnostics, and validation metrics.
+- 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, constrained graph partitioning, and level-scheme visualization.
 - 2025-10-20: Foundational prototype - decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
 
 
@@ -242,4 +245,4 @@ After any code modification:
 ---
 **Maintained by**: FRIB Nuclear Data Group  
 **Status**: [In Development]
-**Version**: 2.2 (XGBoost Architecture)
+**Version**: 0.3.2 (XGBoost Architecture)
