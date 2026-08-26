@@ -7,7 +7,7 @@ Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility
 A physics-informed machine learning nuclear level matching tool designed for Evaluated Nuclear Structure Data File (ENSDF) workflows.
 Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB).
 
-Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering and physics-labeled data synthesis and training and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
+Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering and gradient boosting model training and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
 
 - **Open-source release**: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
 
@@ -15,9 +15,10 @@ Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Ma
 
 ## Development Timeline
 
-- 2026-04-19: Tested for robust, operational use in real-world ENSDF evaluation workflows on $^{34}\text{Cl}$ datasets by improving feature engineering configurable parameters and model training and model training diagnostics and validation metrics.
-- 2026-01-05: Expanded with Dataset Parser, Feature Engineer, Level Matcher, Level Clusterer, and Combined Visualizer modules for a complete end-to-end pipeline.
-- 2025-10-20: The initial prototype based on a LightGBM ranking model at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
+- 2026-04-19: Tested and refined on real-world $^{34}\text{Cl}$ datasets.
+- 2026-04-17: Introduced configurable parameters for feature engineering, model training diagnostics, and validation metrics.
+- 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, clique-constrained clustering, and level-scheme visualization.
+- 2025-10-20: Foundational prototype - decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
 
 
 
