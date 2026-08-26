@@ -4,6 +4,9 @@ Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility
 
 Supported by the U.S. Department of Energy, Office of Science, Office of Nuclear Physics under Award Number DE-SC0016948.
 
+Open-source release: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
+
+
 ## Overview
 
 The first Physics-informed Machine Learning nuclear level matching tool designed for Evaluated Nuclear Structure Data File (ENSDF) workflows.
@@ -12,9 +15,8 @@ Developed and refined through daily evaluation tasks at the Nuclear Data Group a
 
 Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Matcher employs physics-informed feature engineering, gradient boosting model training, and pairwise inference to reconcile nuclear level schemes across multiple datasets. 
 
-- Open-source release: [github.com/FRIBND/Level-Matcher](https://github.com/FRIBND/Level-Matcher)
+Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
-- Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
 ## Development Timeline
 
