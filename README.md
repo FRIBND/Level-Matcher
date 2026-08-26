@@ -21,7 +21,7 @@ Built on the open-source XGBoost (Extreme Gradient Boosting) framework, Level-Ma
 - 2026-04-19: Tested and refined on real-world ENSDF datasets $^{34}\text{Cl}$.
 - 2026-04-17: Introduced configurable parameters for feature correlation, model training diagnostics, and validation metrics.
 - 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, constrained graph partitioning, and level-scheme visualization.
-- 2025-10-20: Foundational prototype - decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
+- 2025-10-20: Foundational prototype: decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
 
 
 
