@@ -45,7 +45,7 @@ from Level_Matcher import inference_dataset_labels
 
 # Tunable level scheme layout knobs (bars and arrows are drawn to the true energy scale)
 level_scheme_column_spacing = 3.0         # Horizontal distance between dataset columns
-level_scheme_bar_width = 0.8              # Level bar length; gamma arrows spread within this width
+level_scheme_bar_width = 2.4             # Level bar length; gamma arrows spread within this width
 level_scheme_maximum_arrows = 30          # Strongest gamma transitions drawn per dataset
 level_scheme_figure_height_inches = 14.0  # Shared-axis figure height for comparable energy scales
 
