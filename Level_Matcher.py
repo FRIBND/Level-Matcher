@@ -80,8 +80,8 @@ Step 5: Constrained Clustering (Graph Partitioning)
 # Run Dataset_Parser.py first to generate these files from raw .ens inputs.
 # Note: These datasets are real-world inference targets — they are never used
 # for model training or validation. All training is done on synthetic data only.
-# Current targets (34S resonance matching): L = 30Si(A,G),(A,N); Q = 33S(N,G),(N,N).
-inference_dataset_labels = ['L', 'Q']
+# Current targets (34S resonance matching): L = 30Si(A,G),(A,N); Q = 33S(N,G),(N,N); F = 4He(30Si,A).
+inference_dataset_labels = ['L', 'Q', 'F']
 
 # Minimum XGBoost probability for a pair to appear in the pairwise output file.
 pairwise_output_threshold = 0.01
