@@ -1,0 +1,812 @@
+{
+    "levelsTable": {
+        "levels": [
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11411.33,
+                    "uncertainty": {
+                        "value": 0.05,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11411.33"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11430.3,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11430.3"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11434.3,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11434.3"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11440.4,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11440.4"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11448.1,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11448.1"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11467.8,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11467.8"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11469.2,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11469.2"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11474.6,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11474.6"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11486.0,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11486.0"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 2,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "1-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11492.7,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11492.7"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11496.2,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11496.2"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11499.6,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11499.6"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 2,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "1-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11502.3,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11502.3"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 2,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "1-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11502.9,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11502.9"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11515.3,
+                    "uncertainty": {
+                        "value": 0.5,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11515.3"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11541.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11541"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 2,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "1-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11544.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11544"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11546.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11546"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11551.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11551"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11564.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11564"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "evaluatorInput": "GE 1"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11575.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11575"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 0,
+                            "isTentativeSpin": true,
+                            "parity": "-",
+                            "isTentativeParity": true
+                        }
+                    ],
+                    "evaluatorInput": "(0-)"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11581.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11581"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11590.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11590"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11608.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11608"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11610.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11610"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11614.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11614"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11622.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11622"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11626.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11626"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11632.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11632"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11634.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11634"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 0,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "0+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11639.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11639"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11649.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11649"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 6,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "3-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11669.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11669"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 4,
+                            "isTentativeSpin": false,
+                            "parity": "-",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "2-"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11670.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11670"
+                },
+                "isStable": false,
+                "spinParity": {
+                    "values": [
+                        {
+                            "twoTimesSpin": 2,
+                            "isTentativeSpin": false,
+                            "parity": "+",
+                            "isTentativeParity": false
+                        }
+                    ],
+                    "evaluatorInput": "1+"
+                }
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11704.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11704"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11706.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11706"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11717.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11717"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11744.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11744"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11773.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11773"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11785.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11785"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11796.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11796"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11829.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11829"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11870.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11870"
+                },
+                "isStable": false
+            },
+            {
+                "energy": {
+                    "unit": "keV",
+                    "value": 11949.0,
+                    "uncertainty": {
+                        "value": 5.0,
+                        "type": "inferred"
+                    },
+                    "evaluatorInput": "11949"
+                },
+                "isStable": false
+            }
+        ]
+    }
+}

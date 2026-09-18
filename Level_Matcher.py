@@ -75,11 +75,13 @@ Step 5: Constrained Clustering (Graph Partitioning)
 # User Configuration
 # ==========================================
 # Specify which dataset letters to load for pairwise level matching inference.
-# These must correspond to JSON files in data/json/ (e.g., 'K' -> test_dataset_K.json).
+# These must correspond to JSON files in data/json/ (e.g., 'L' -> test_dataset_L.json).
+# Letter mapping comes from data/raw/XREF.txt; see the Dataset_Parser.py run log for assignments.
 # Run Dataset_Parser.py first to generate these files from raw .ens inputs.
 # Note: These datasets are real-world inference targets — they are never used
 # for model training or validation. All training is done on synthetic data only.
-inference_dataset_labels = ['K', 'L']
+# Current targets (34S resonance matching): L = 30Si(A,G),(A,N); Q = 33S(N,G),(N,N).
+inference_dataset_labels = ['L', 'Q']
 
 # Minimum XGBoost probability for a pair to appear in the pairwise output file.
 pairwise_output_threshold = 0.01
@@ -223,8 +225,8 @@ if __name__ == "__main__":
     # Step 3: Test Data Ingestion
     # ==========================================
     # Load level and gamma test data from JSON files for matching.
-    # Logic: These datasets (A, B, C) are used solely for inference and were not seen during training.
-    # Logic: These datasets (K, L) are the real-world inference targets; never seen during the synthetic training phase.
+    # Logic: The configured datasets (see inference_dataset_labels at the top of this file) are used
+    # solely for inference; they were never seen during the synthetic training phase.
 
     print("Ingesting Test Data...")
     levels = parse_json_datasets(inference_dataset_labels)

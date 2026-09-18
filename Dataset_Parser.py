@@ -41,7 +41,8 @@ Technical Steps:
 1. Read XREF.txt to build a letter-to-reaction mapping; strip ENSDF markup for normalized comparison.
 2. Scan all .ens files in data/raw/; extract each file's DSID from its identification record (cols 9-38).
 3. Match each DSID to its XREF letter using normalized string comparison.
-4. Parse L records (energy levels) and G records (gamma transitions) using fixed-width column slicing.
+4. Parse L records (energy levels) and G records (gamma transitions) using fixed-width column slicing;
+   skip continuation/annotation records (e.g., FLAG=H lines) that carry no level data.
 5. Infer uncertainties from precision where explicit uncertainty values are absent.
 6. Output one test_dataset_{letter}.json per .ens file into data/json/.
 
@@ -52,7 +53,7 @@ Architecture:
 - `infer_uncertainty_from_precision`: Heuristic engine for precision-based uncertainty estimation.
 - `parse_spin_parity`: Normalizes ENSDF Spin-Parity strings into structured spin/parity hypothesis lists.
 - `parse_g_record`: Slices G records into structured gamma transition data dictionaries.
-- `parse_ensdf_line`: Slices L records into structured level data dictionaries.
+- `parse_ensdf_line`: Slices L records into structured level data dictionaries; returns None for annotation/continuation lines.
 - `convert_ens_files_to_datasets`: Main driver that scans .ens files, matches labels, and writes JSON.
 """
 
@@ -285,7 +286,8 @@ def parse_ensdf_line(line):
     """
     Parses a single ENSDF L record using fixed-width column slicing.
     Applies precision-based uncertainty inference when an explicit uncertainty is absent.
-    Skips all non-L record types (comment, gamma, header, and identification records).
+    Skips all non-L record types (comment, gamma, header, and identification records)
+    as well as continuation/annotation records (e.g., FLAG=H lines) that carry no level data.
     """
     if len(line) < 8:
         return None, None
@@ -294,7 +296,12 @@ def parse_ensdf_line(line):
     # Require both: record type 'L' at position 7 AND a blank at position 6.
     # Comment records (cL) also carry 'L' at position 7 but have 'c' at position 6
     # and must be excluded so their text content is never parsed as level data.
+    # Continuation/annotation records carry a letter at position 5 instead of a blank
+    # (e.g., " 34S F L FLAG=H"); they contain no level data and are skipped.
+    # Skipping keeps the previous level active so later G records still attach correctly.
     if record_type != 'L' or line[6] == 'c':
+        return None, None
+    if line[5] != ' ':
         return None, None
         
     energy_string = line[9:19].strip()
@@ -303,7 +310,11 @@ def parse_ensdf_line(line):
     if not energy_string:
         return None, None
         
-    energy_value = float(energy_string)
+    try:
+        energy_value = float(energy_string)
+    except ValueError:
+        # Defensive guard: non-numeric energy content is an annotation, not a physics level
+        return None, None
     
     # Calculate uncertainty: explicit if provided, otherwise infer from precision
     if uncertainty_string:

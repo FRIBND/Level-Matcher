@@ -36,7 +36,7 @@ Numbered Technical Steps:
 
 Architecture:
 - `spread_text_positions`: Iterative relaxation algorithm for label spacing.
-- `plot_level_schemes`: Main rendering engine for input datasets.
+- `plot_level_schemes`: Main rendering engine for input datasets (dataset list imported from Level_Matcher.py).
 - `plot_clustering_results`: Visualization engine for reconciled physical levels.
 """
 
@@ -46,6 +46,10 @@ import numpy as np
 import json
 import os
 import re
+
+# Import the inference dataset list from the single source of truth (Level_Matcher.py user configuration).
+# This keeps the visualizer aligned with whatever datasets were last matched, with no second place to edit.
+from Level_Matcher import inference_dataset_labels
 
 # Tunable clustering layout knobs for quick manual adjustments
 clustering_box_padding = 1.0                # Box padding; increase for wider/taller boxes
@@ -128,8 +132,12 @@ def load_dataset(dataset_code):
     return [], []
 
 def plot_level_schemes():
-    """Generate visualization of input level schemes from all datasets with gamma transitions."""
-    datasets = ['K', 'L']
+    """Generate visualization of input level schemes from all datasets with gamma transitions.
+
+    The dataset list is imported from Level_Matcher.py (inference_dataset_labels) so this
+    visualizer always renders exactly the datasets that were selected for inference.
+    """
+    datasets = inference_dataset_labels
 
     # Pre-load all datasets to count levels for proportional figure sizing
     preloaded_data = {code: load_dataset(code) for code in datasets}
@@ -141,10 +149,13 @@ def plot_level_schemes():
     )
     # Scale figure height proportionally: 0.12 inches per level, minimum 20 inches
     figure_height = max(20, maximum_level_count * 0.12)
-    figure, axis = plt.subplots(figsize=(16, figure_height))
+    # Scale figure width with the number of dataset columns (16 inches for two columns)
+    figure_width = max(10, len(datasets) * 8)
+    figure, axis = plt.subplots(figsize=(figure_width, figure_height))
 
     # X-axis positions for each dataset column (wider spacing to accommodate dense labels)
-    x_positions = {'K': 0, 'L': 5.0}
+    dataset_column_spacing = 5.0
+    x_positions = {code: index * dataset_column_spacing for index, code in enumerate(datasets)}
     line_width = 0.8
     maximum_energy = 0
     maximum_label_position = 0  # Track the highest spread label position for ylim
@@ -201,11 +212,15 @@ def plot_level_schemes():
         # Sort by energy
         levels_data.sort(key=lambda x: x['energy'])
         
-        # Compute adaptive minimum label spacing based on level density
-        # Divisor 2.0 keeps total label spread within the data energy range
+        # Compute adaptive minimum label spacing from level density and font height
+        # Term 1 (average gap): spreads labels evenly when levels are densely clustered
+        # Term 2 (font guard): guarantees at least one label height of separation when the
+        #                      energy range is large relative to the figure height
         energies = [x['energy'] for x in levels_data]
         energy_range = (max(energies) - min(energies)) if len(energies) > 1 else 1000
-        adaptive_minimum_distance = max(30, energy_range / max(len(energies) * 2.0, 1))
+        average_gap_distance = energy_range / max(len(energies), 1)
+        font_guard_distance = energy_range * 0.14 / figure_height
+        adaptive_minimum_distance = max(30, average_gap_distance, font_guard_distance)
         text_y_positions = spread_text_positions(energies, minimum_distance=adaptive_minimum_distance)
 
         # Track highest label position across all datasets for ylim
@@ -331,11 +346,11 @@ def plot_level_schemes():
                              bbox=dict(boxstyle='square,pad=0.1', facecolor='white', edgecolor='none', alpha=1.0))
 
     # Styling
-    axis.set_xlim(-2.5, 7.5)
+    axis.set_xlim(-2.5, (len(datasets) - 1) * dataset_column_spacing + 2.5)
     # Extend ylim to the highest spread label position so no labels are clipped
     axis.set_ylim(-200, max(maximum_energy * 1.05, maximum_label_position * 1.03))
-    axis.set_xticks([0, 5.0])
-    axis.set_xticklabels(['Dataset K', 'Dataset L'], 
+    axis.set_xticks([index * dataset_column_spacing for index in range(len(datasets))])
+    axis.set_xticklabels([f'Dataset {code}' for code in datasets],
                          fontsize=Font_Config['axis_labels'], fontweight='bold', family='Times New Roman')
     
     axis.spines['top'].set_visible(False)
