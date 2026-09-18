@@ -146,7 +146,7 @@ Scoring_Config = {
         #   Reproduces the standard normal kernel exp(−z²/2). Use when calibration is reliable.
         # Sigma_Scale=1.0 (extreme):  1σ→36.8%, 2σ→1.8%, 3σ→0.0%, 4σ→0.0%, 5σ→0.0%
         #   Ultra-strict: even a 1σ separation is heavily penalized.
-        'Sigma_Scale': 0.2
+        'Sigma_Scale': 0.6
     },
     'Spin': {
         # Spin (J) similarity scores. "firm" = confirmed in ENSDF, "tentative" = parenthesized e.g. (2).
