@@ -101,9 +101,15 @@ if (Test-Path $log_file) {
     }
 }
 
-if ($spawned_process.ExitCode -ne 0) {
+# Failure detection: the Process object returned by Start-Process does not expose its
+# ExitCode on this system (verified with a trivial test process), so failures are
+# detected from the logs instead. A Python crash writes a traceback to the stderr log
+# (mirrored in the stdout log), while a healthy run leaves both logs traceback-free.
+$log_has_traceback = (Test-Path $log_file) -and (Select-String -Path $log_file -Pattern "Traceback" -Quiet)
+$stderr_has_traceback = (Test-Path $error_log_file) -and ((Get-Item $error_log_file).Length -gt 0) -and (Select-String -Path $error_log_file -Pattern "Traceback" -Quiet)
+if ($log_has_traceback -or $stderr_has_traceback) {
     Write-Host ""
-    Write-Host "[ERROR] Level_Matcher.py exited with code $($spawned_process.ExitCode). Check logs:" -ForegroundColor Red
+    Write-Host "[ERROR] Level_Matcher.py reported an exception. Check logs:" -ForegroundColor Red
     Write-Host "  stdout: $log_file" -ForegroundColor Red
     Write-Host "  stderr: $error_log_file" -ForegroundColor Red
     if (Test-Path $error_log_file) {
