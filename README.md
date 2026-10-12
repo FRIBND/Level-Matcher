@@ -18,7 +18,7 @@ Integration roadmap: A production version will be incorporated into the Consiste
 
 ## Development Timeline
 
-- 2026-04-19: Tested and refined on real-world ENSDF datasets <sup>34</sup>Cl.
+- 2026-04-19: Tested and refined on real-world ENSDF datasets <sup>34</sup>Cl, <sup>34</sup>S.
 - 2026-04-17: Introduced configurable parameters for feature correlation, model training diagnostics, and validation metrics.
 - 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, constrained graph partitioning, and level-scheme visualization.
 - 2025-10-20: Foundational prototype: decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
