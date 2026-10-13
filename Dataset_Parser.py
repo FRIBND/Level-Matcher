@@ -54,7 +54,7 @@ Workflow Diagram:
 # - `parse_xref_file`: Reads XREF.txt into a normalized letter-to-description dictionary.
 # - `match_dsid_to_letter`: Maps a .ens file's DSID to its XREF dataset letter.
 # - `infer_uncertainty_from_precision`: Heuristic engine for precision-based uncertainty estimation.
-# - `extract_target_spin_parity`: Identifies target ground state spin-parity from comments or nuclear systematics.
+# - `extract_target_spin_parity`: Reads target ground-state Jpi from the top general comments; defaults to 0+ (even-even or unspecified).
 # - `infer_spin_parity_from_angular_momentum_transfer`: Computes allowed level Jπ hypotheses via angular momentum coupling.
 # - `parse_spin_parity_range`: Expands range expressions according to ENSDF spin-parity notation standards.
 # - `parse_spin_parity`: Normalizes ENSDF Spin-Parity strings into structured spin/parity hypothesis lists complying with spin-parity.json.
@@ -306,8 +306,8 @@ def parse_spin_parity(spin_parity_string):
             spin_raw_firm = firm_spin_tentative_parity_match.group(1)
             tentative_parity = firm_spin_tentative_parity_match.group(2)
             try:
-                spin_value_parsed = float(eval(spin_raw_firm))
-                two_times_spin_value = int(round(spin_value_parsed * 2))
+                spin_fraction = Fraction(spin_raw_firm)
+                two_times_spin_value = int(round(float(spin_fraction) * 2))
                 hypothesis = {
                     "twoTimesSpin": two_times_spin_value,
                     "parity": tentative_parity,
@@ -316,7 +316,7 @@ def parse_spin_parity(spin_parity_string):
                 if is_globally_tentative:
                     hypothesis["isTentativeSpin"] = True
                 results.append(hypothesis)
-            except (ValueError, SyntaxError):
+            except (ValueError, ZeroDivisionError):
                 pass
             continue
 
@@ -336,8 +336,8 @@ def parse_spin_parity(spin_parity_string):
             continue
 
         try:
-            spin_value_parsed = float(eval(spin_raw))
-            two_times_spin_value = int(round(spin_value_parsed * 2))
+            spin_fraction = Fraction(spin_raw)
+            two_times_spin_value = int(round(float(spin_fraction) * 2))
             # Parity written outside the closing parenthesis is a firm assignment.
             # Parity found inside the tentative block (i.e. not from global_parity)
             # is itself tentative alongside the spin.
@@ -358,7 +358,7 @@ def parse_spin_parity(spin_parity_string):
                 if (not parity_is_from_outside_parens) and is_tentative:
                     hypothesis["isTentativeParity"] = True
             results.append(hypothesis)
-        except (ValueError, SyntaxError):
+        except (ValueError, ZeroDivisionError):
             continue
 
     return results
@@ -392,51 +392,32 @@ def format_evaluator_input(value_string, uncertainty_string):
 
 def extract_target_spin_parity(dataset_lines):
     """
-    Extracts target nucleus ground state spin-parity from ENSDF comment lines or nuclear systematics.
-    Examples of comment patterns:
-    - "J|p=3/2+ for {+33}S ground state (2025Ch07)."
-    - "The ground states of {+30}Si, |a, and {+34}S all have J|p=0+."
-    - Systematic fallback: All even-even ground states have Jπ = 0+.
+    Reads the target ground-state Jpi from the first general comment (and its continuation lines) of the dataset.
+    Accepted wordings: "J|p=3/2+ for {+33}S ground state", "... J|p=0+ ... g.s.", "ground states of ... all have J|p=0+".
+    Default is 0+: even-Z even-N ground states are always 0+, and unspecified targets are assumed 0+.
     """
-    for line in dataset_lines:
-        if len(line) > 7 and line[6:7] == 'c':
-            match_target = re.search(r'J\|?p\s*=\s*([0-9/]+[\+\-])\s*(?:for|\{.*\}\s*ground\s*state|from)', line, re.IGNORECASE)
-            if match_target:
-                return match_target.group(1)
-            match_ground = re.search(r'ground\s+states?\s+of\s+.*have\s+J\|?p\s*=\s*([0-9/]+[\+\-])', line, re.IGNORECASE)
-            if match_ground:
-                return match_ground.group(1)
+    top_comment_text = ""
+    for line in dataset_lines[1:]:
+        # General comment = 'c' in col 7 and blank col 8; a blank col 6 starts a new comment, a digit continues it
+        if len(line) > 8 and line[6] == 'c' and line[7] == ' ':
+            if line[5] == ' ' and top_comment_text:
+                break
+            top_comment_text += " " + line[9:].strip()
 
-    for line in dataset_lines:
-        if len(line) > 7 and line[6:7] == 'c':
-            match_any = re.search(r'J\|?p\s*=\s*([0-9/]+[\+\-])', line)
-            if match_any:
-                return match_any.group(1)
-
-    # Nuclear structure systematics: All even-even ground states have Jπ = 0+
-    if dataset_lines and len(dataset_lines[0]) > 9:
-        dsid = dataset_lines[0][9:39].strip()
-        match_reaction = re.match(r'^(\d+)([A-Za-z]+)', dsid)
-        if match_reaction:
-            mass_number = int(match_reaction.group(1))
-            element_symbol = match_reaction.group(2).upper()
-            even_z_elements = {
-                'HE': 2, 'BE': 4, 'C': 6, 'O': 8, 'NE': 10, 'MG': 12, 'SI': 14,
-                'S': 16, 'AR': 18, 'CA': 20, 'TI': 22, 'CR': 24, 'FE': 26, 'NI': 28,
-                'ZN': 30, 'GE': 32, 'SE': 34, 'KR': 36, 'SR': 38, 'ZR': 40, 'MO': 42,
-                'RU': 44, 'PD': 46, 'CD': 48, 'SN': 50, 'TE': 52, 'XE': 54, 'BA': 56,
-                'CE': 58, 'ND': 60, 'SM': 62, 'GD': 64, 'DY': 66, 'ER': 68, 'YB': 70,
-                'HF': 72, 'W': 74, 'OS': 76, 'PT': 78, 'HG': 80, 'PB': 82
-            }
-            atomic_number = even_z_elements.get(element_symbol)
-            if atomic_number is not None and atomic_number % 2 == 0 and mass_number % 2 == 0:
-                return '0+'
-    return None
+    spin_pattern = r'J\|?p\s*=\s*(\d+(?:/\d+)?[+-])'
+    keyword_pattern = r'(?:ground\s*states?|g\.s\.|target)'
+    spin_first_match = re.search(spin_pattern + r'[^.]{0,60}?' + keyword_pattern, top_comment_text, re.IGNORECASE)
+    keyword_first_match = re.search(keyword_pattern + r'[^.=]{0,60}?' + spin_pattern, top_comment_text, re.IGNORECASE)
+    candidate_matches = [match for match in (spin_first_match, keyword_first_match) if match]
+    if candidate_matches:
+        return min(candidate_matches, key=lambda match: match.start()).group(1)
+    return '0+'
 
 
 def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_string, target_spin_parity_string, transferred_particle_spin_parity_string="1/2+"):
     """
     Calculates allowed final state spin-parity options using quantum angular momentum coupling.
+    Supports single or mixed transferred particles (e.g. '1/2+' or '0+,1+' for mixed transfers).
     Selection Rules:
     1. Channel Spin S: |J_target - s_particle| <= S <= J_target + s_particle (step 1)
     2. Final Spin J:   |S - L| <= J <= S + L (step 1)
@@ -446,28 +427,28 @@ def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_s
         return None
 
     clean_target = target_spin_parity_string.strip().strip('()')
-    clean_particle = transferred_particle_spin_parity_string.strip().strip('()')
     if not (clean_target.endswith('+') or clean_target.endswith('-')):
-        return None
-    if not (clean_particle.endswith('+') or clean_particle.endswith('-')):
         return None
 
     try:
         target_spin = Fraction(clean_target[:-1])
         target_parity = 1 if clean_target.endswith('+') else -1
-        particle_spin = Fraction(clean_particle[:-1])
-        particle_parity = 1 if clean_particle.endswith('+') else -1
     except (ValueError, ZeroDivisionError):
         return None
 
-    # Channel spins S = |J_target - s_particle| ... J_target + s_particle (step 1)
-    minimum_channel_spin = abs(target_spin - particle_spin)
-    maximum_channel_spin = target_spin + particle_spin
-    channel_spin_values = []
-    current_channel_spin = minimum_channel_spin
-    while current_channel_spin <= maximum_channel_spin:
-        channel_spin_values.append(current_channel_spin)
-        current_channel_spin += 1
+    # Parse particle spin-parity list (e.g., '1/2+', or '0+,1+' for mixed Fermi+GT or mixed np transfer)
+    particle_specs = []
+    for p_token in transferred_particle_spin_parity_string.split(','):
+        clean_p = p_token.strip().strip('()')
+        if clean_p.endswith('+') or clean_p.endswith('-'):
+            try:
+                p_spin = Fraction(clean_p[:-1])
+                p_parity = 1 if clean_p.endswith('+') else -1
+                particle_specs.append((p_spin, p_parity))
+            except (ValueError, ZeroDivisionError):
+                pass
+    if not particle_specs:
+        return None
 
     clean_l = angular_momentum_transfer_string.strip()
     is_globally_tentative = clean_l.startswith('(') and clean_l.endswith(')')
@@ -485,47 +466,37 @@ def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_s
         clean_group = group_str.strip('() ')
 
         # Plus-separated entries represent mixed L-transfer populating the same level (INTERSECTION)
-        component_strings = clean_group.split('+')
-        component_states_list = []
-        component_tentative_list = []
-
-        for comp_str in component_strings:
-            comp_str = comp_str.strip()
-            if not comp_str:
-                continue
-            comp_tentative = group_tentative or '(' in comp_str or ')' in comp_str
+        l_components = []
+        for comp_str in clean_group.split('+'):
             digits = re.sub(r'[^\d]', '', comp_str)
-            if not digits:
-                continue
-            l_val = int(digits)
-            final_parity_value = target_parity * particle_parity * ((-1)**l_val)
-            parity_string = '+' if final_parity_value > 0 else '-'
-            states = set()
-            for channel_s in channel_spin_values:
-                minimum_final_j = abs(channel_s - l_val)
-                maximum_final_j = channel_s + l_val
-                current_final_j = minimum_final_j
-                while current_final_j <= maximum_final_j:
-                    two_times_spin = int(round(float(current_final_j) * 2))
-                    states.add((two_times_spin, parity_string))
-                    current_final_j += 1
-            component_states_list.append(states)
-            component_tentative_list.append(comp_tentative)
-
-        if not component_states_list:
+            if digits:
+                l_components.append(int(digits))
+        if not l_components:
             continue
+        group_final_tentative = group_tentative or '(' in group_str
 
-        # Intersect states within the plus-group (e.g. L=0+2 -> L=0 states INTERSECT L=2 states)
-        intersected_states = set(component_states_list[0])
-        for other_states in component_states_list[1:]:
-            intersected_states &= other_states
+        # Each transferred-spin option (e.g. np pair s=0 or s=1) couples separately; results are unioned
+        intersected_states = set()
+        for particle_spin, particle_parity in particle_specs:
+            channel_spin_values = []
+            current_channel_spin = abs(target_spin - particle_spin)
+            while current_channel_spin <= target_spin + particle_spin:
+                channel_spin_values.append(current_channel_spin)
+                current_channel_spin += 1
 
-        # Defensive fallback: if intersection is empty, take union
-        if not intersected_states:
-            for other_states in component_states_list:
-                intersected_states |= other_states
+            states_per_l = []
+            for l_val in l_components:
+                parity_string = '+' if target_parity * particle_parity * ((-1)**l_val) > 0 else '-'
+                states = set()
+                for channel_s in channel_spin_values:
+                    current_final_j = abs(channel_s - l_val)
+                    while current_final_j <= channel_s + l_val:
+                        states.add((int(round(float(current_final_j) * 2)), parity_string))
+                        current_final_j += 1
+                states_per_l.append(states)
 
-        group_final_tentative = any(component_tentative_list)
+            # Mixed L (e.g. 0+2): level must be reachable by every L component
+            intersected_states |= set.intersection(*states_per_l)
 
         # Union into overall hypotheses
         for state_key in intersected_states:
@@ -571,7 +542,7 @@ def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_s
     }
 
 
-def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False):
+def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False, default_angular_momentum_transfer="(0,1,2,3,4,5)"):
     """
     Parses a single ENSDF L record using fixed-width column slicing.
     Applies precision-based uncertainty inference when an explicit uncertainty is absent.
@@ -617,7 +588,7 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
     else:
         uncertainty_value = infer_uncertainty_from_precision(energy_string)
     
-    spin_parity_raw = line[22:39].strip()
+    spin_parity_raw = line[21:39].strip()
     energy_uncertainty_object = (
         {"type": "symmetric", "value": uncertainty_value}
         if uncertainty_value > 0
@@ -632,8 +603,9 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
         },
         "gamma_decays": []
     }
-    # Stable flag is constrained to boolean const: true by level.json; only present for stable ground state
-    if energy_value == 0.0:
+    # Stable flag in ENSDF L records: half-life in cols 40-49 explicitly states "STABLE"
+    half_life_raw = line[39:49].strip().upper() if len(line) >= 40 else ""
+    if "STABLE" in half_life_raw or "STAB" in half_life_raw:
         data["isStable"] = True
 
     spin_parity_values = parse_spin_parity(spin_parity_raw)
@@ -644,8 +616,8 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
         }
     elif is_transfer_reaction and target_spin_parity_string:
         angular_momentum_transfer_string = line[55:64].strip() if len(line) >= 56 else ""
-        # If L-transfer is not given, consider L=0,1,2,3,4,5 possible
-        effective_l_string = angular_momentum_transfer_string if angular_momentum_transfer_string else "0,1,2,3,4,5"
+        # L not given: default is tentative L=0..5 (thermal neutron capture is s-wave only, L=0)
+        effective_l_string = angular_momentum_transfer_string if angular_momentum_transfer_string else default_angular_momentum_transfer
         inferred_spin_parity = infer_spin_parity_from_angular_momentum_transfer(
             effective_l_string,
             target_spin_parity_string,
@@ -717,9 +689,15 @@ def match_dsid_to_letter(dsid, xref_map):
 
     Returns the matched letter string, or None if no match is found.
     """
-    normalized_dsid = dsid.strip().upper()
+    normalized_dsid = normalize_ensdf_text(dsid)
     for letter, description in xref_map.items():
-        if normalized_dsid == description.upper():
+        if normalized_dsid == normalize_ensdf_text(description):
+            return letter
+
+    # Fallback to direct uppercase comparison without markup stripping
+    raw_dsid = dsid.strip().upper()
+    for letter, description in xref_map.items():
+        if raw_dsid == description.strip().upper():
             return letter
     return None
 
@@ -732,17 +710,23 @@ def parse_g_record(line):
     Column layout (0-indexed, matching ENSDF 80-column standard):
     -  9-18 : Gamma energy (keV)
     - 19-20 : Energy uncertainty (DE); converted from last-digit notation to absolute keV
-    - 22-28 : Relative photon intensity (RI)
+    - 21-28 : Relative photon intensity (RI) (cols 22-29, 1-indexed)
     - 29-30 : RI uncertainty (DRI); converted from last-digit notation to absolute intensity
               units using the decimal precision of RI (e.g., RI="98.6" DRI="14" -> 1.4).
               'LT'/'GT' are limit markers stored as 0.0.
     """
     if len(line) < 23:
         return None
+    if len(line) > 5 and line[5] != ' ':
+        return None
+    if len(line) > 6 and line[6] == 'c':
+        return None
+    if len(line) > 7 and line[7] != 'G':
+        return None
 
     energy_string = line[9:19].strip()
     uncertainty_string = line[19:21].strip()
-    intensity_string = line[22:29].strip()
+    intensity_string = line[21:29].strip()
     intensity_uncertainty_string = line[29:31].strip()
 
     if not energy_string:
@@ -841,30 +825,55 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
 
         target_spin_parity_string = extract_target_spin_parity(lines)
 
-        # Detect transfer reactions from DSID (e.g., (D,P), (P,D), (D,3HE), (N,D), (T,P), (P,T), (3HE,A), etc.)
+        # Reaction-to-particle coupling mapping strictly based on angular_momentum_coupling.md:
         transfer_particle_map = {
-            r'\(D,P\)': '1/2+',
-            r'\(P,D\)': '1/2+',
-            r'\(D,N\)': '1/2+',
-            r'\(N,D\)': '1/2+',
-            r'\(D,3HE\)': '1/2+',
-            r'\(3HE,D\)': '1/2+',
-            r'\(3HE,A\)': '1/2+',
-            r'\(A,3HE\)': '1/2+',
-            r'\(A,T\)': '1/2+',
-            r'\(T,A\)': '1/2+',
-            r'\(T,P\)': '0+',
-            r'\(P,T\)': '0+',
-            r'\(3HE,P\)': '0+',
-            r'\(A,2HE\)': '0+'
+            # Single-neutron transfer (s=1/2+)
+            r'\(D,P\)': '1/2+', r'\(P,D\)': '1/2+',
+            r'\(T,D\)': '1/2+', r'\(D,T\)': '1/2+',
+            r'\(3HE,A\)': '1/2+', r'\(A,3HE\)': '1/2+',
+            # Single-proton transfer (s=1/2+)
+            r'\(D,N\)': '1/2+', r'\(N,D\)': '1/2+',
+            r'\(3HE,D\)': '1/2+', r'\(D,3HE\)': '1/2+',
+            r'\(A,T\)': '1/2+', r'\(T,A\)': '1/2+',
+            # Two-nucleon identical transfer (2n / 2p, relative s-state: s=0+, T=1)
+            r'\(T,P\)': '0+', r'\(P,T\)': '0+',
+            r'\(3HE,N\)': '0+', r'\(N,3HE\)': '0+',
+            r'\(A,2HE\)': '0+',
+            # Two-nucleon np transfer: (a,d), (d,a) -> deuteron-like s=1+, T=0
+            r'\(A,D\)': '1+', r'\(D,A\)': '1+',
+            # Two-nucleon np transfer: (3He,p), (p,3He) -> mixed 0+ (T=1) and 1+ (T=0)
+            r'\(3HE,P\)': '0+,1+', r'\(P,3HE\)': '0+,1+',
+            # Cluster transfer (alpha cluster s=0+)
+            r'\(6LI,D\)': '0+', r'\(D,6LI\)': '0+',
+            r'\(7LI,T\)': '0+', r'\(T,7LI\)': '0+',
+            r'\(12C,8BE\)': '0+', r'\(16O,12C\)': '0+',
+            # Inelastic scattering: (a,a') natural parity 0+; (p,p') non-flip 0+ and spin-flip 1+
+            r"\(A,A'": '0+',
+            r"\(P,P'": '0+,1+',
+            # Radiative capture: captured particle couples to the target
+            r'\(P,G\)': '1/2+', r'\(N,G\)': '1/2+', r'\(A,G\)': '0+',
+            # Charge exchange (Fermi 0+, GT 1+)
+            r'\(6LI,6HE\)': '1+',
+            r'\(P,N\)': '0+,1+', r'\(N,P\)': '0+,1+',
+            r'\(3HE,T\)': '0+,1+', r'\(T,3HE\)': '0+,1+'
         }
         is_transfer = False
         transferred_particle_spin = "1/2+"
-        for pattern, p_spin in transfer_particle_map.items():
-            if re.search(pattern, dsid, re.IGNORECASE):
-                is_transfer = True
-                transferred_particle_spin = p_spin
-                break
+        if 'RESONANCES' in dsid.upper():
+            # Resonance datasets: the projectile is captured by the target (inverse kinematics: 4He target = captured alpha)
+            upper_dsid = dsid.strip().upper()
+            captured_particle_match = re.match(r"^\w+\((\w+),", upper_dsid)
+            captured_particle = 'A' if upper_dsid.startswith('4HE(') else (captured_particle_match.group(1) if captured_particle_match else None)
+            if captured_particle in ('N', 'P'):
+                is_transfer, transferred_particle_spin = True, '1/2+'
+            elif captured_particle == 'A':
+                is_transfer, transferred_particle_spin = True, '0+'
+        else:
+            for pattern, p_spin in transfer_particle_map.items():
+                if re.search(pattern, dsid, re.IGNORECASE):
+                    is_transfer = True
+                    transferred_particle_spin = p_spin
+                    break
 
         # 3. Parse L records grouped with their immediately following G records
         level_list = []
@@ -878,7 +887,8 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                     line,
                     target_spin_parity_string=target_spin_parity_string,
                     transferred_particle_spin_parity_string=transferred_particle_spin,
-                    is_transfer_reaction=is_transfer
+                    is_transfer_reaction=is_transfer,
+                    default_angular_momentum_transfer="0" if 'THERMAL' in dsid.upper() else "(0,1,2,3,4,5)"
                 )
                 if record_data is not None:
                     current_level = record_data
@@ -901,7 +911,7 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                     gamma_energy_value = gamma_data["energy_value"]
                     final_energy_target = initial_level_energy - gamma_energy_value
 
-                    # Match final level by closest energy within 50 keV tolerance
+                    # Match final level: G-record de-excites to the level closest to (E_initial - E_gamma)
                     best_match_index = 0
                     minimum_difference = 1e9
                     for candidate_index, candidate_level in enumerate(level_list):
@@ -909,8 +919,6 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                         if difference < minimum_difference:
                             minimum_difference = difference
                             best_match_index = candidate_index
-
-                    final_level_index = best_match_index if minimum_difference <= 50.0 else 0
 
                     gamma_energy_uncertainty_object = (
                         {"type": "symmetric", "value": gamma_data["energy_uncertainty"]}
@@ -925,8 +933,9 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                             "evaluatorInput": gamma_data["energy_input_string"]
                         },
                         "initialLevel": level_index,
-                        "finalLevel": final_level_index
+                        "finalLevel": best_match_index
                     }
+                    level_list[best_match_index].setdefault("feedingGammas", []).append(gamma_counter)
 
                     if gamma_data["has_intensity"]:
                         if gamma_data["intensity_limit"] == 'LT':
@@ -946,7 +955,6 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
 
                     gammas_table_list.append(gamma_entry)
                     level_gamma_indices.append(gamma_counter)
-                    level_list[final_level_index].setdefault("feedingGammas", []).append(gamma_counter)
                     gamma_counter += 1
 
                 if level_gamma_indices:
