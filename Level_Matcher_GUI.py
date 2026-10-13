@@ -6,15 +6,16 @@ Level Matcher Graphical Interface
 ======================================
 
 The user picks a workspace folder that holds their own ENSDF .ens files, including the adopted file whose X records list the dataset letters (XREF.txt is the fallback).
-All generated files are written inside that workspace, so the tool never reads from or writes to
-the tool's own data/raw folder.
+All outputs (parsed JSON and matching results) are written to json and outputs folders next to the workspace folder
+(for example workspace .../S34/new -> .../S34/json and .../S34/outputs), so the user's .ens folder is never modified and
+the tool never reads from or writes to the tool's own data/raw folder.
 
 Workflow Diagram:
 
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [workspace/json/test_dataset_{letter}.json]
+  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{prefix}_dataset_{letter}.json]
             |
             v
   [Dataset list: letter, reaction, source file]  <-- parsed from the parser log
@@ -23,18 +24,19 @@ Workflow Diagram:
   [User selects two or more datasets] --> [Run Matching]
             |
             v
-  Level_Matcher.py --> Combined_Visualizer.py (subprocesses) --> [workspace/outputs/]
+  Level_Matcher.py --> Combined_Visualizer.py (subprocesses) --> [<workspace parent>/outputs/]
             |
             v
   [Live log panel]
 
 Numbered Technical Steps:
 1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
-2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside workspace/json; the parser log
+2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside the json folder beside the workspace
+   (created if missing, existing files deleted first); the parser log
    builds the dataset list.
 3. Selection: at least two datasets are required for cross-dataset matching.
 4. Run: matcher and visualizer run as subprocesses so training never freezes the window; output streams to the log.
-5. Results: reports and figures are written to workspace/outputs.
+5. Results: reports and figures are written to <workspace parent>/outputs.
 
 Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state.
@@ -52,7 +54,7 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, font as tkfont, messagebox, ttk
 
 project_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,6 +65,13 @@ class Level_Matcher_Interface:
         root_window.title("Level Matcher")
         root_window.geometry("900x700")
         root_window.minsize(700, 500)
+
+        # Every widget uses the named Tk fonts, so one monospaced family (first installed) covers the whole window
+        installed_fonts = set(tkfont.families())
+        monospace_family = next((name for name in ("JetBrains Mono SemiBold", "JetBrains Mono", "JuliaMono", "Fira Code", "Consolas", "Courier New")
+                                 if name in installed_fonts), "Courier")
+        for named_font in ("TkDefaultFont", "TkTextFont", "TkFixedFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont"):
+            tkfont.nametofont(named_font).configure(family=monospace_family, size=10)
 
         self.log_queue = queue.Queue()
         self.is_busy = False
@@ -95,7 +104,7 @@ class Level_Matcher_Interface:
         # 4. Log panel
         log_frame = ttk.LabelFrame(root_window, text="Log")
         log_frame.pack(fill="both", expand=True, padx=10, pady=(5, 10))
-        self.log_text = tk.Text(log_frame, wrap="none", state="disabled", font=("Consolas", 9))
+        self.log_text = tk.Text(log_frame, wrap="none", state="disabled")
         log_scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=log_scrollbar.set)
         self.log_text.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
@@ -193,7 +202,7 @@ class Level_Matcher_Interface:
         command = [sys.executable, os.path.join(project_directory, "Dataset_Parser.py"),
                    "--raw_dir", workspace_path,
                    "--xref", xref_path,
-                   "--output_dir", os.path.join(workspace_path, "json")]
+                   "--output_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json")]
         self.status_variable.set("Scanning workspace...")
 
         def finish_scan(succeeded):
@@ -221,8 +230,8 @@ class Level_Matcher_Interface:
             return
 
         shared_arguments = ["--labels", *selected_letters,
-                            "--json_dir", os.path.join(workspace_path, "json"),
-                            "--output_dir", os.path.join(workspace_path, "outputs")]
+                            "--json_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json"),
+                            "--output_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "outputs")]
         commands = [
             [sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments],
             [sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments],
@@ -230,7 +239,7 @@ class Level_Matcher_Interface:
         self.status_variable.set("Running matching (training may take several minutes)...")
 
         def finish_run(succeeded):
-            self.status_variable.set("Done. Results are in the workspace outputs folder." if succeeded
+            self.status_variable.set("Done. Results are in the outputs folder next to the workspace." if succeeded
                                      else "Run failed. See log.")
 
         self.start_subprocess_sequence(commands, finish_run)

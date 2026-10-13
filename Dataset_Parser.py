@@ -45,8 +45,9 @@ Workflow Diagram:
 #    skip continuation/annotation records (e.g., FLAG=H lines) that carry no level data.
 # 5. Extract target nucleus ground state spin-parity and infer unspecified level spin-parities from
 #    orbital angular momentum transfers (L-values) via quantum angular momentum coupling.
-# 6. Infer uncertainties from precision where explicit uncertainty values are absent.
-# 7. Output one test_dataset_{letter}.json per .ens file into data/json/ strictly complying with ENSDF JSON Schema 1.0.0
+# 6. Missing energy uncertainties: level energies take 50 keV if all excited-state energies in the dataset are whole tens,
+#    5 keV if all are integers, otherwise precision-based; gamma energies take 1 keV (decimal), 5 keV (integer), 50 keV (whole ten).
+# 7. Create the output folder if missing, delete stale files in it, then output one test_dataset_{letter}.json per .ens file into data/json/ strictly complying with ENSDF JSON Schema 1.0.0
 #    (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
 #
 # Architecture:
@@ -542,7 +543,7 @@ def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_s
     }
 
 
-def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False, default_angular_momentum_transfer="(0,1,2,3,4,5)"):
+def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False, default_angular_momentum_transfer="(0,1,2,3,4,5)", default_level_uncertainty=None):
     """
     Parses a single ENSDF L record using fixed-width column slicing.
     Applies precision-based uncertainty inference when an explicit uncertainty is absent.
@@ -586,9 +587,8 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
         # Ground state (0.0 keV) is the absolute reference => 0 uncertainty
         uncertainty_value = 0.0
     else:
-        uncertainty_value = infer_uncertainty_from_precision(energy_string)
-    
-    spin_parity_raw = line[21:39].strip()
+        # Dataset-wide default (5 or 50 keV) when all excited-state energies are integers / whole tens
+        uncertainty_value = default_level_uncertainty or infer_uncertainty_from_precision(energy_string) = line[21:39].strip()
     energy_uncertainty_object = (
         {"type": "symmetric", "value": uncertainty_value}
         if uncertainty_value > 0
@@ -739,8 +739,12 @@ def parse_g_record(line):
 
     if uncertainty_string:
         energy_uncertainty = calculate_absolute_uncertainty(energy_string, uncertainty_string)
+    elif '.' in energy_string:
+        energy_uncertainty = 1.0
+    elif int(energy_value) % 10 == 0:
+        energy_uncertainty = 50.0
     else:
-        energy_uncertainty = infer_uncertainty_from_precision(energy_string)
+        energy_uncertainty = 5.0
 
     # Relative intensity: absent or non-numeric (LT/GT limit markers) -> store as 0.0
     relative_intensity_value = 0.0
@@ -787,6 +791,11 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     """
     xref_map = parse_xref_file(xref_path)
     os.makedirs(output_dir, exist_ok=True)
+    # Stale JSON from earlier runs must not survive into this run
+    for stale_name in os.listdir(output_dir):
+        stale_path = os.path.join(output_dir, stale_name)
+        if os.path.isfile(stale_path):
+            os.remove(stale_path)
 
     ens_files = sorted(filename for filename in os.listdir(raw_dir) if filename.endswith('.ens'))
     if not ens_files:
@@ -876,6 +885,22 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                     break
 
         # 3. Parse L records grouped with their immediately following G records
+        # Excited-state energy strings decide the dataset-wide default level uncertainty (ground state excluded)
+        excited_energy_strings = []
+        for line in lines:
+            if len(line) > 19 and line[5:8] == '  L':
+                energy_text = line[9:19].strip()
+                try:
+                    if float(energy_text) != 0.0:
+                        excited_energy_strings.append(energy_text)
+                except ValueError:
+                    pass
+        default_level_uncertainty = None
+        if excited_energy_strings and all(re.fullmatch(r'\d+', text) and int(text) % 10 == 0 for text in excited_energy_strings):
+            default_level_uncertainty = 50.0
+        elif excited_energy_strings and all(re.fullmatch(r'\d+', text) for text in excited_energy_strings):
+            default_level_uncertainty = 5.0
+
         level_list = []
         current_level = None
 
@@ -888,7 +913,8 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
                     target_spin_parity_string=target_spin_parity_string,
                     transferred_particle_spin_parity_string=transferred_particle_spin,
                     is_transfer_reaction=is_transfer,
-                    default_angular_momentum_transfer="0" if 'THERMAL' in dsid.upper() else "(0,1,2,3,4,5)"
+                    default_angular_momentum_transfer="0" if 'THERMAL' in dsid.upper() else "(0,1,2,3,4,5)",
+                    default_level_uncertainty=default_level_uncertainty
                 )
                 if record_data is not None:
                     current_level = record_data
