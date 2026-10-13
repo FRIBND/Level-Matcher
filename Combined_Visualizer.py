@@ -34,6 +34,8 @@ Architecture:
 - `spread_text_positions`: Iterative label relaxation used by the cluster table renderer.
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import json

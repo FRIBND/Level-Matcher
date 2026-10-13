@@ -47,6 +47,8 @@ Provides instant visual assessment of XGBoost training quality, enabling rapid d
 poor fit, or configuration issues without manual inspection of numerical logs.
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os

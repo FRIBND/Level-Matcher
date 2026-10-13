@@ -295,25 +295,31 @@ def parse_json_datasets(dataset_codes, json_directory=None):
                     
                     for level_index, level_item in enumerate(raw_levels):
                         energy_value = level_item.get('energy', {}).get('value')
-                        energy_uncertainty = level_item.get('energy', {}).get('uncertainty', {}).get('value', 5.0)
+                        energy_uncertainty = level_item.get('energy', {}).get('uncertainty', {}).get('value', 0.0 if (energy_value is not None and float(energy_value) == 0.0) else 5.0)
                         spin_parity_list = level_item.get('spinParity', {}).get('values', [])
-                        spin_parity_string = level_item.get('spinParity', {}).get('evaluatorInput')
+                        spin_parity_string = (
+                            level_item.get('spinParity', {}).get('stringRepresentation')
+                            or level_item.get('spinParity', {}).get('evaluatorInput')
+                        )
                         
                         # Extract gamma decays for this level from gammas_table_list
                         gamma_decays = []
-                        if 'gammas' in level_item and gammas_table_list:
+                        gamma_indices = level_item.get('emittedGammas') or level_item.get('gammas') or []
+                        if gamma_indices and gammas_table_list:
                             # Level has gamma indices pointing to gammas_table_list
-                            for gamma_index in level_item['gammas']:
+                            for gamma_index in gamma_indices:
                                 if 0 <= gamma_index < len(gammas_table_list):
                                     gamma_entry = gammas_table_list[gamma_index]
                                     gamma_energy = gamma_entry['energy']
-                                    gamma_intensity = gamma_entry.get('gammaIntensity', {})
+                                    gamma_intensity = gamma_entry.get('intensity') or gamma_entry.get('gammaIntensity', {})
+                                    intensity_unc = gamma_intensity.get('uncertainty', {})
+                                    intensity_unc_value = intensity_unc.get('value', 0) if isinstance(intensity_unc, dict) else 0
                                     
                                     gamma_decays.append({
                                         'energy': gamma_energy['value'],
-                                        'energy_uncertainty': gamma_energy['uncertainty'].get('value', 5.0),
+                                        'energy_uncertainty': gamma_energy.get('uncertainty', {}).get('value', 5.0) if isinstance(gamma_energy.get('uncertainty'), dict) else 5.0,
                                         'intensity': gamma_intensity.get('value', 0),
-                                        'intensity_uncertainty': gamma_intensity.get('uncertainty', {}).get('value', 0)
+                                        'intensity_uncertainty': intensity_unc_value
                                     })
                         
                         if energy_value is not None:
@@ -394,11 +400,11 @@ def calculate_spin_similarity(spin_parity_list_1, spin_parity_list_2):
     # Input: twoTimesSpin (2J stored as integer in JSON, e.g., 3 means J=3/2)
     # Output: list of (J, isTentative) tuples
     spins_1 = [
-        (state['twoTimesSpin'] / 2.0, state['isTentativeSpin'])
+        (state['twoTimesSpin'] / 2.0, state.get('isTentativeSpin', False))
         for state in spin_parity_list_1 if state.get('twoTimesSpin') is not None
     ]
     spins_2 = [
-        (state['twoTimesSpin'] / 2.0, state['isTentativeSpin'])
+        (state['twoTimesSpin'] / 2.0, state.get('isTentativeSpin', False))
         for state in spin_parity_list_2 if state.get('twoTimesSpin') is not None
     ]
 
@@ -483,11 +489,11 @@ def calculate_parity_similarity(spin_parity_list_1, spin_parity_list_2):
     # Input: parity ('+' or '-' string in JSON)
     # Output: list of (parity, isTentative) tuples
     parities_1 = [
-        (state['parity'], state['isTentativeParity'])
+        (state['parity'], state.get('isTentativeParity', False))
         for state in spin_parity_list_1 if state.get('parity') is not None
     ]
     parities_2 = [
-        (state['parity'], state['isTentativeParity'])
+        (state['parity'], state.get('isTentativeParity', False))
         for state in spin_parity_list_2 if state.get('parity') is not None
     ]
 
