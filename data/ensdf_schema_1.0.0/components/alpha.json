@@ -1,0 +1,22 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "alpha.json",
+	"description": "This schema describes the properties of alpha-particle records stored in alpha-decay datasets.",
+	"type": "object",
+	"$ref": "radiation.json",
+	"unevaluatedProperties": false,
+	"required": [ "energy" ],
+	"properties": {
+		"hindranceFactor": {
+			"type": "object",
+			"description": "A number which describes how fast the parent state decays to the daughter state via alpha decay.  Typically, this is derived by evaluators using software rather than taken directly from publications.  Therefore, measurements are not expected for this quantity.",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		}
+	}
+}

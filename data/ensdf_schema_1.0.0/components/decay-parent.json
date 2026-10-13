@@ -1,0 +1,48 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "decay-parent.json",
+	"description": "This schema describes the decaying level which populates states in a decay dataset in ENSDF.  It is largely equivalent to a level found in the levels-table schema, with a few extra pieces of information.  These include identifying information for the parent nucleus and the decay Q-value.",
+    "type": "object",
+	"required": [ "energy" ],
+	"unevaluatedProperties": false,
+	"$ref": "nuclide.json",
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"energy": {
+			"$ref": "level-energy.json"
+		},
+		"spinParity": {
+			"$ref": "spin-parity.json"
+		},
+		"halfLife": {
+			"$ref": "half-life.json"
+		},
+		"qValue": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"unevaluatedProperties": false,
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"unit": {
+					"type": "string",
+					"const": "keV"
+				}
+			},
+			"required": [ "unit" ]
+		},
+		"branchingRatio": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		}
+	}
+}

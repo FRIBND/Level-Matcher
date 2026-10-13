@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "angular-momentum-transfer.json",
+	"description": "The angular momentum (L) transferred in a reaction or carried away by a particle.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [ "value" ],
+	"properties": {
+		"value": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"isTentative": {
+			"type": "boolean",
+			"const": true
+		}
+	}
+
+}

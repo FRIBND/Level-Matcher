@@ -1,0 +1,50 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "evaluation-header.json",
+	"description": "This schema describes the identifying information required for every dataset.",
+	"type": "object",
+	"required": [
+		"documentType",
+		"database",
+		"schemaVersion",
+		"datasetName"
+	],
+	"unevaluatedProperties": false,
+	"$ref": "nuclide.json",
+	"properties": {
+		"schemaVersion": {
+			"type": "string"
+		},
+		"documentType": {
+			"type": "string",
+			"description": "A string describing this dataset's category."
+		},
+		"datasetName": {
+			"description": "The title given to a dataset by an evaluator.  Typical examples might be '\\$^{148}\\$Gd \\$\\\\alpha\\$ decay' or (HI,\\$xn\\gamma\\$).",
+			"type": "string"
+		},
+		"database": {
+			"description": "Indicates from which NNDC database this dataset originates.",
+			"type": "string"
+		},
+		"history": {		
+			"$ref": "history.json"
+		},
+		"drawingOptions": {
+			"description": "This is an instruction that evaluators can use to control the figures in Nuclear Data Sheets.",
+			"type": "object",
+			"additionalProperties": false,
+			"minProperties": 1,
+			"properties": {
+				"intensityDisplay": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 7
+				},
+				"intensityComment": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

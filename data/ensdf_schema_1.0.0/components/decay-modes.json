@@ -1,0 +1,39 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "decay-modes.json",
+	"description": "This schema describes the various string representations of decay modes used in ENSDF.  While this schema is not used in and of itself, the values here are specified separately so that they can be referenced individually by other schemata.",
+	"additionalProperties": false,
+	"type": "object",
+	"properties": {
+		"common": {
+			"type": "string",
+			"pattern": "^(?=.)(B[\\+-]|EC(\\+B\\+)?)?(((?:([2-9]?[npdhta]))(?!.*\\5))*|f)?$",
+			"description": "This describes the most common decay modes.  The first portion describes beta decay: B- (electron), B+ (positron), EC (electron capture), and EC+B+ (electron capture and positron).  The second portion describes (possibly multiple) light-ion decay modes: n (neutron), p (proton), d (deuteron), h (helion or 3He), t (triton), a (alpha).  Finally, fission is represented by the letter 'f.'  Beta-delayed decay modes are indicated by both the former and latter portions of the pattern being present.  Note that modes like 'ECap' (electron-capture-delayed emission of an alpha and a proton) are allowed, but 'ECpp' are not and should be 'EC2p.'"
+		},
+		"cluster": {
+			"type": "string",
+			"pattern": "^[0-9]{0,3}[A-Z][a-z]?$",
+			"description": "This regex describes cluster decay, i.e. a nucleus or possibly just an element, e.g. 24Mg or Na."
+		},
+		"isomer": {
+			"type": "string",
+			"const": "IT",
+			"description": "Electromagnetic decay mode - gamma and/or conversion electron"
+		},
+		"doubleBeta": {
+			"type": "string",
+			"pattern": "^2(B[+-]|EC)$",
+			"description": "Double-beta decay.  Currently mixed EC/B+ is not supported."
+		},
+		"partialWidth": {
+			"type": "string",
+			"pattern": "^[anpdg][0-9]?$",
+			"description": "Partial widths have a slightly different syntax.  The letters have the same meaning, with the addition of 'g' meaning 'gamma.'  The trailing number indicates decay to the level with the given index."
+		},
+		"relativePartialWidth": {
+			"type": "string",
+			"pattern": "^([anpg][0-9]?)/(?!\\1)[anpg][0-9]?$",
+			"description": "Relative partial widths are basically the same as partial widths, but have to specify two unique decay modes, hence the negative lookahead after the '/.'"
+		}
+	}
+}

@@ -1,0 +1,222 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "adopted.json",
+	"type": "object",
+	"description": "Dataset containing authoritative information on energy levels and gamma transitions in a nucleus.  Supporting datasets including information on specific reactions and decays which populate states in this nucleus are contained within this dataset.",
+	"required": [
+		"header",
+		"observationStatus"
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "adopted"
+				},
+				"database": {
+					"const": "ENSDF"
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			}
+		},
+		"observationStatus": {
+			"type": "string",
+			"enum": [ "observed", "unobserved", "unconfirmed"],
+			"description": "Describes whether an isotope has been observed or not.  If there is only indirect experimental evidence or the evidence is not conclusive, then it should be marked unconfirmed."
+		},
+		"qValues": {
+			"$ref": "qvalues.json"
+		},
+		"datasets": {
+			"description": "The collection of datasets which support the information in this dataset, organized by type.  Individual levels can cross-reference data in these datasets.",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"properties": {
+				"comments": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "comments.json"
+					}
+				},
+				"neutronCapture": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "neutron-capture.json"
+					}
+				},
+				"generalReaction": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "general-reaction.json"
+					}
+				},
+				"transfer": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "transfer.json"
+					}
+				},
+				"coulombExcitation": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "coulomb-excitation.json"
+					}
+				},
+				"alphaDecay": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "alpha-decay.json"
+					}
+				},
+				"betaDecay": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "beta-decay.json"
+					}
+				},
+				"protonDecay": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "proton-decay.json"
+					}
+				},
+				"delayedParticleDecay": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "delayed-particle-decay.json"
+					}
+				},
+				"generalDecay": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "general-decay.json"
+					}
+				},
+				"fluorescence": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "fluorescence.json"
+					}
+				},
+				"chargeExchange": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "charge-exchange.json"
+					}
+				},
+				"inelasticScattering": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"$ref": "inelastic-scattering.json"
+					}
+				}
+			}
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"crossReferences": {
+								"$ref": "cross-references.json"
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"type": "object",
+			"$ref": "gammas-table.json",
+			"properties": {
+				"gammas": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": [ "finalLevel" ],
+						"not": {
+							"anyOf": [
+								{
+									"type": "object",
+									"required": [ "angularCoefficients" ]
+								},
+								{
+									"type": "object",
+									"required": [ "dco" ]
+								},
+								{
+									"type": "object",
+									"required": [ "polarization" ]
+								}
+							]
+						},
+						"properties": {
+							"internalConversion": {
+								"not": {
+									"type": "object",
+									"required": [ "measurements" ]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

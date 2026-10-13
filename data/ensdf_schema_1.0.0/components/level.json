@@ -1,0 +1,100 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "level.json",
+	"description": "A schema for a nuclear level.  For the most part, it is a collection of other schemata, which contain their own descriptions.",
+	"type": "object",
+	"required": [ "energy" ],
+	"not": {
+		"anyOf": [
+			{
+				"description": "A level should specify either its half-life or its decay widths, but never both.",
+				"required": [ "halfLife", "decayWidths" ]
+			},
+			{
+				"description": "Unbound levels which have a resonance energy should use a width, not a half-life.",
+				"required": [ "halfLife", "resonanceEnergy" ]
+			},
+			{
+				"description": "Stable levels do not have half-lives.",
+				"required": [ "halfLife", "isStable" ]
+			},
+			{
+				"description": "Stable levels do not have decay widths.",
+				"required": [ "isStable", "decayWidths" ]
+			}
+		]
+	},
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"existence": {
+			"description": "Describes how well this level is attested.  'Inferred' means that only indirect evidence for this level is available, such as intensity balance but no direct observation of radiation.  'Uncertain' means that there is reason to question the existence of this level.",
+			"type": "string",
+			"enum": [ "inferred", "uncertain" ]
+		},
+		"emittedGammas": {
+			"type": "array",
+			"description": "The indices of the gammas in the gammas table which are emitted from this level.",
+			"minItems": 1,
+			"items": {
+				"type": "integer",
+				"minimum": 0
+			}
+		},
+		"feedingGammas": {
+			"type": "array",
+			"description": "The indices of the gammas in the gammas table which populate this level.",
+			"minItems": 1,
+			"items": {
+				"type": "integer",
+				"minimum": 0
+			}
+		},
+		"unobservedGammaIntensity": {
+			"$ref": "unobserved-gamma-intensity.json"
+		},
+		"spinParity": {
+			"$ref": "spin-parity.json"
+		},
+		"energy": {
+			"$ref": "level-energy.json"
+		},
+		"configuration": {
+			"description": "The particle configuration associated with this level.  Examples could include Nilsson orbitals (e.g. 1/2[521]) and shell-model orbitals (0p_{1/2}).",
+			"type": "string"
+		},
+		"decayBranchingRatios": {
+			"$ref": "decay-branching-ratios.json"
+		},
+		"isospin": {
+			"$ref": "isospin.json"
+		},
+		"multipoleMoments": {
+			"$ref": "multipole-moments.json"
+		},
+		"deformation": {
+			"$ref": "deformation.json"
+		},
+		"gFactor": {
+			"$ref": "g-factor.json"
+		},
+		"reducedTransitionStrengths": {
+			"$ref": "level-transition-strengths.json"
+		},
+		"isStable": {
+			"description": "Indicates whether nucleus is stable.  This flag primarily serves as a way to indicate to users that they should not expect a half-life or decay widths on this level.",
+			"type": "boolean",
+			"const": true
+		},
+		"halfLife": {
+			"$ref": "half-life.json"
+		},
+		"decayWidths": {
+			"$ref": "decay-widths.json"
+		},
+		"resonanceEnergy": {
+			"$ref": "resonance-energy.json"
+		}
+	}
+}

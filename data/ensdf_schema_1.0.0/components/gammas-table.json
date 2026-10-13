@@ -1,0 +1,54 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "gammas-table.json",
+	"type": "object",
+	"description": "The collection of information necessary to construct the gammas table in Nuclear Data Sheets.",
+	"required": [ "gammas" ],
+	"additionalProperties": false,
+	"properties": {
+		"comments":{
+			"$ref": "#/$defs/comment"
+		},
+		"gammas": {
+			"description": "The gamma rays observed in this dataset.  Absence of initial/final level indices indicates an unplaced gamma.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "gamma.json"
+			}
+		},
+		"normalization": {
+			"description": "The normalization factor for gamma-ray intensities.",
+			"$ref": "decay-normalization.json"
+		},
+		"transitionNormalization": {
+			"description": "The normalization factor for gamma+conversion intensities.",
+			"$ref": "decay-normalization.json"
+		}
+	},
+	"$defs": {
+		"comment": {
+			"type": "array",
+			"$ref": "table-comments.json",
+			"items": {
+				"type": "object",
+				"properties": {
+					"columns": {
+						"type": "object",
+						"propertyNames": {
+							"enum": [
+								"energy",
+								"gammaIntensity",
+								"multipolarity",
+								"internalConversion",
+								"mixingRatio",
+								"transitionIntensity"
+							]
+						}
+					}
+				}
+			}
+		}
+	}
+}
+

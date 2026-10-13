@@ -1,0 +1,104 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "inelastic-scattering.json",
+	"description": "The schema which describes experiments populating excited states of nuclei via inelastic-scattering reactions.  This type of dataset looks very similar to general-reaction datasets.  However, it differs by the addition of angular-momentum transfers and the associated deformation lengths to levels.",
+	"type": "object",
+	"required": [ "header"],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "inelasticScattering"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"$ref": "levels-table.json",
+			"unevaluatedProperties": false,
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"angularMomentumTransfer": {
+								"$ref": "angular-momentum-transfer.json"
+							},
+							"deformationLength": {
+								"$ref": "deformation-length.json"
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife",
+										"angularMomentumTransfer",
+										"deformationLength"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

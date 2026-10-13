@@ -1,0 +1,71 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "mixing-ratios.json",
+	"description": "This schema describes the mixing ratio assigned to electromagnetic transitions with mixed multipolarity, e.g. M1+E2.  If the parity of the transition is not known but its order is, then only the numerical value can be specified, i.e. 'E1+M2 or M1+E2' would be indicated as '2/1.'  Note also that the larger multipole should be in the numerator.",
+	"type": "object",
+	"additionalProperties": false,
+	"minProperties": 1,
+	"propertyNames": {
+		"pattern": "^(?=([EM]?[2-9])/(?!\\1)[EM]?[1-8]$)([EM]?9/?)?([EM]?8/?)?([EM]?7/?)?([EM]?6/?)?([EM]?5/?)?([EM]?4/?)?([EM]?3/?)?([EM]?2/?)?([EM]?1/?)?$",
+		"if": {
+			"pattern": "(E[2468])|(M[13579])"
+		},
+		"then": {
+			"not": {
+				"pattern": "(E[13579])|(M[2468])"
+			}
+		}
+	},
+	"patternProperties": {
+		"^[2-9]/[1-8]$":{
+			"$ref": "#/$defs/mixingRatio"
+		},
+		"^[EM][2-9]/[EM][1-8]$": {
+			"$ref": "#/$defs/mixingRatio"
+		}
+	},
+	"$defs": {
+		"mixingRatio": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{
+					"$ref": "quantity.json",
+					"properties": {
+						"isAbsoluteValue": {
+							"type": "boolean",
+							"const": true
+						},
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				},
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "quantity.json" },
+									{
+										"properties": {
+											"isAbsoluteValue": {
+												"type": "boolean",
+												"const": true
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+			]
+		}
+	}
+}

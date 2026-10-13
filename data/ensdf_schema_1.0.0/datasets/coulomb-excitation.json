@@ -1,0 +1,103 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "coulomb-excitation.json",
+	"description": "This schema describes the format for datasets describing Coulomb-excitation studies.  These datasets look much like general-reaction datasets, but with the addition of transition matrix elements to the levels in the levels table.  The validator makes no distinction between different 'types' of Coulomb excitation, e.g. multistep excitations at 'safe' energies vs 'fast' or one-step excitations.",
+	"type": "object",
+	"required": [ "header" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "coulombExcitation"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"transitionMatrixElements": {
+								"$ref": "transition-matrix-elements.json"
+							},
+							"angularMomentumTransfer": {
+								"$ref": "angular-momentum-transfer.json"
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife",
+										"angularMomentumTransfer"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

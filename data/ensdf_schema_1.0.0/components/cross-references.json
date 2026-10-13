@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "cross-references.json",
+	"description": "This schema describes references from a level in the Adopted Levels dataset to other datasets within the evaluation.  The `type` corresponds to a key in the 'datasets' property within the Adopted dataset, and `index` refers to a dataset at that position within the array indicated by `type.`  The levelIndex is currently optional, as is the legacy levelEnergy carried over from the old format. This will likely be revised in the future.",
+	"type": "array",
+	"minItems": 1,
+	"uniqueItems": true,
+	"items": {
+		"type": "object",
+		"additionalProperties": false,
+		"required": [ "type", "index" ],
+		"properties": {
+			"type": {
+				"description": "This indicates one of the categories of dataset that are possible to contain in the Adopted Levels in ENSDF.",
+				"type": "string"
+			},
+			"index": {
+				"description": "The index of the dataset within the array of datasets indicated by the 'type' field.",
+				"type": "integer",
+				"minimum": 0
+			},
+			"levelIndex": {
+				"description": "The index of the level within the dataset specified by 'type' and 'index.'",
+				"type": "integer",
+				"minimum": 0
+			},
+			"levelEnergy": {
+				"description": "The energy of the level within the dataset specified by 'type' and 'index.'  This is held over from the old ENSDF format for compatibility reasons and users should expect it to be deprecated.",
+				"type": "string"
+			},
+			"assignment": {
+				"description": "How confident an evaluator is in the assignment of a cross reference.",
+				"type": "string",
+				"enum": [ "tentative", "ambiguous" ]
+			}
+		}
+	}
+}

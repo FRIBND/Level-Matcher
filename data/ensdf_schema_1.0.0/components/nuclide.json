@@ -1,0 +1,2290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nuclide.json",
+  "type": "object",
+  "description": "This schema specifies a nuclide, ensuring that each chemical symbol corresponds to the correct proton number.",
+  "required": [
+    "z",
+    "a",
+    "symbol",
+    "element"
+  ],
+  "properties": {
+    "a": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "z": {
+      "type": "integer"
+    },
+    "element": {
+      "type": "string"
+    },
+    "symbol": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "NN"
+          },
+          "element": {
+            "const": "Neutron"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "H"
+          },
+          "element": {
+            "const": "Hydrogen"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "He"
+          },
+          "element": {
+            "const": "Helium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 3
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Li"
+          },
+          "element": {
+            "const": "Lithium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 4
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Be"
+          },
+          "element": {
+            "const": "Beryllium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 5
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "B"
+          },
+          "element": {
+            "const": "Boron"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 6
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "C"
+          },
+          "element": {
+            "const": "Carbon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 7
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "N"
+          },
+          "element": {
+            "const": "Nitrogen"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 8
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "O"
+          },
+          "element": {
+            "const": "Oxygen"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 9
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "F"
+          },
+          "element": {
+            "const": "Fluorine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 10
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ne"
+          },
+          "element": {
+            "const": "Neon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 11
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Na"
+          },
+          "element": {
+            "const": "Sodium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 12
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Mg"
+          },
+          "element": {
+            "const": "Magnesium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 13
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Al"
+          },
+          "element": {
+            "const": "Aluminum"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 14
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Si"
+          },
+          "element": {
+            "const": "Silicon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 15
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "P"
+          },
+          "element": {
+            "const": "Phosphorus"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 16
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "S"
+          },
+          "element": {
+            "const": "Sulfur"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 17
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cl"
+          },
+          "element": {
+            "const": "Chlorine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 18
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ar"
+          },
+          "element": {
+            "const": "Argon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 19
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "K"
+          },
+          "element": {
+            "const": "Potassium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 20
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ca"
+          },
+          "element": {
+            "const": "Calcium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 21
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sc"
+          },
+          "element": {
+            "const": "Scandium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 22
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ti"
+          },
+          "element": {
+            "const": "Titanium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 23
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "V"
+          },
+          "element": {
+            "const": "Vanadium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 24
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cr"
+          },
+          "element": {
+            "const": "Chromium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 25
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Mn"
+          },
+          "element": {
+            "const": "Manganese"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 26
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Fe"
+          },
+          "element": {
+            "const": "Iron"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 27
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Co"
+          },
+          "element": {
+            "const": "Cobalt"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 28
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ni"
+          },
+          "element": {
+            "const": "Nickel"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 29
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cu"
+          },
+          "element": {
+            "const": "Copper"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 30
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Zn"
+          },
+          "element": {
+            "const": "Zinc"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 31
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ga"
+          },
+          "element": {
+            "const": "Gallium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 32
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ge"
+          },
+          "element": {
+            "const": "Germanium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 33
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "As"
+          },
+          "element": {
+            "const": "Arsenic"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 34
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Se"
+          },
+          "element": {
+            "const": "Selenium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 35
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Br"
+          },
+          "element": {
+            "const": "Bromine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 36
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Kr"
+          },
+          "element": {
+            "const": "Krypton"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 37
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Rb"
+          },
+          "element": {
+            "const": "Rubidium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 38
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sr"
+          },
+          "element": {
+            "const": "Strontium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 39
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Y"
+          },
+          "element": {
+            "const": "Yttrium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 40
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Zr"
+          },
+          "element": {
+            "const": "Zirconium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 41
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Nb"
+          },
+          "element": {
+            "const": "Niobium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 42
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Mo"
+          },
+          "element": {
+            "const": "Molybdenum"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 43
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Tc"
+          },
+          "element": {
+            "const": "Technetium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 44
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ru"
+          },
+          "element": {
+            "const": "Ruthenium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 45
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Rh"
+          },
+          "element": {
+            "const": "Rhodium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 46
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pd"
+          },
+          "element": {
+            "const": "Palladium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 47
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ag"
+          },
+          "element": {
+            "const": "Silver"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 48
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cd"
+          },
+          "element": {
+            "const": "Cadmium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 49
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "In"
+          },
+          "element": {
+            "const": "Indium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 50
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sn"
+          },
+          "element": {
+            "const": "Tin"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 51
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sb"
+          },
+          "element": {
+            "const": "Antimony"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 52
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Te"
+          },
+          "element": {
+            "const": "Tellurium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 53
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "I"
+          },
+          "element": {
+            "const": "Iodine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 54
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Xe"
+          },
+          "element": {
+            "const": "Xenon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 55
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cs"
+          },
+          "element": {
+            "const": "Cesium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 56
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ba"
+          },
+          "element": {
+            "const": "Barium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 57
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "La"
+          },
+          "element": {
+            "const": "Lanthanum"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 58
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ce"
+          },
+          "element": {
+            "const": "Cerium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 59
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pr"
+          },
+          "element": {
+            "const": "Praseodymium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 60
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Nd"
+          },
+          "element": {
+            "const": "Neodymium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 61
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pm"
+          },
+          "element": {
+            "const": "Promethium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 62
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sm"
+          },
+          "element": {
+            "const": "Samarium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 63
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Eu"
+          },
+          "element": {
+            "const": "Europium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 64
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Gd"
+          },
+          "element": {
+            "const": "Gadolinium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 65
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Tb"
+          },
+          "element": {
+            "const": "Terbium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 66
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Dy"
+          },
+          "element": {
+            "const": "Dysprosium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 67
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ho"
+          },
+          "element": {
+            "const": "Holmium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 68
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Er"
+          },
+          "element": {
+            "const": "Erbium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 69
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Tm"
+          },
+          "element": {
+            "const": "Thulium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 70
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Yb"
+          },
+          "element": {
+            "const": "Ytterbium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 71
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Lu"
+          },
+          "element": {
+            "const": "Lutetium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 72
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Hf"
+          },
+          "element": {
+            "const": "Hafnium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 73
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ta"
+          },
+          "element": {
+            "const": "Tantalum"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 74
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "W"
+          },
+          "element": {
+            "const": "Tungsten"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 75
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Re"
+          },
+          "element": {
+            "const": "Rhenium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 76
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Os"
+          },
+          "element": {
+            "const": "Osmium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 77
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ir"
+          },
+          "element": {
+            "const": "Iridium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 78
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pt"
+          },
+          "element": {
+            "const": "Platinum"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 79
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Au"
+          },
+          "element": {
+            "const": "Gold"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 80
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Hg"
+          },
+          "element": {
+            "const": "Mercury"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 81
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Tl"
+          },
+          "element": {
+            "const": "Thallium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 82
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pb"
+          },
+          "element": {
+            "const": "Lead"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 83
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Bi"
+          },
+          "element": {
+            "const": "Bismuth"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 84
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Po"
+          },
+          "element": {
+            "const": "Polonium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 85
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "At"
+          },
+          "element": {
+            "const": "Astatine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 86
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Rn"
+          },
+          "element": {
+            "const": "Radon"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 87
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Fr"
+          },
+          "element": {
+            "const": "Francium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 88
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ra"
+          },
+          "element": {
+            "const": "Radium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 89
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ac"
+          },
+          "element": {
+            "const": "Actinium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 90
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Th"
+          },
+          "element": {
+            "const": "Thorium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 91
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pa"
+          },
+          "element": {
+            "const": "Protactinium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 92
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "U"
+          },
+          "element": {
+            "const": "Uranium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 93
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Np"
+          },
+          "element": {
+            "const": "Neptunium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 94
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Pu"
+          },
+          "element": {
+            "const": "Plutonium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 95
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Am"
+          },
+          "element": {
+            "const": "Americium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 96
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cm"
+          },
+          "element": {
+            "const": "Curium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 97
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Bk"
+          },
+          "element": {
+            "const": "Berkelium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 98
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cf"
+          },
+          "element": {
+            "const": "Californium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 99
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Es"
+          },
+          "element": {
+            "const": "Einsteinium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 100
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Fm"
+          },
+          "element": {
+            "const": "Fermium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 101
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Md"
+          },
+          "element": {
+            "const": "Mendelevium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 102
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "No"
+          },
+          "element": {
+            "const": "Nobelium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 103
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Lr"
+          },
+          "element": {
+            "const": "Lawrencium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 104
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Rf"
+          },
+          "element": {
+            "const": "Rutherfordium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 105
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Db"
+          },
+          "element": {
+            "const": "Dubnium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 106
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Sg"
+          },
+          "element": {
+            "const": "Seaborgium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 107
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Bh"
+          },
+          "element": {
+            "const": "Bohrium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 108
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Hs"
+          },
+          "element": {
+            "const": "Hassium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 109
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Mt"
+          },
+          "element": {
+            "const": "Meitnerium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 110
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ds"
+          },
+          "element": {
+            "const": "Darmstadtium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 111
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Rg"
+          },
+          "element": {
+            "const": "Roentgenium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 112
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Cn"
+          },
+          "element": {
+            "const": "Copernicium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 113
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Nh"
+          },
+          "element": {
+            "const": "Nihonium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 114
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Fl"
+          },
+          "element": {
+            "const": "Flerovium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 115
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Mc"
+          },
+          "element": {
+            "const": "Moscovium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 116
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Lv"
+          },
+          "element": {
+            "const": "Livermorium"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 117
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Ts"
+          },
+          "element": {
+            "const": "Tennessine"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "z": {
+            "const": 118
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "symbol": {
+            "const": "Og"
+          },
+          "element": {
+            "const": "Oganesson"
+          }
+        }
+      }
+    }
+  ]
+}

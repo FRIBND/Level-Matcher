@@ -1,0 +1,68 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "gamma-multipolarity.json",
+	"description": "This schema describes how a gamma-multipolarity is speficied.  It is always a string value.  When the parity of the gamma ray is known, the string takes the form 'M1,' 'M1+E2,' etc.  If not, then only the number is specified, e.g. '1' or '1+2.'  Associated mixing ratios and transition strengths, if known or calculable, are included as properties of the multipole.  Note that empty-object is valid.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"propertyNames": {
+		"pattern": "^((E0)?(\\+?[EM]?1)?(\\+?[EM]?2)?(\\+?[EM]?3)?(\\+?[EM]?4)?(\\+?[EM]?5)?(\\+?[EM]?6)?(\\+?[EM]?7)?(\\+?[EM]?8)?(\\+?[EM]?9)?(\\+|$))?([\\(\\[](E0)?(\\+?[EM]?1)?(\\+?[EM]?2)?(\\+?[EM]?3)?(\\+?[EM]?4)?(\\+?[EM]?5)?(\\+?[EM]?6)?(\\+?[EM]?7)?(\\+?[EM]?8)?(\\+?[EM]?9)?[\\)\\]])?$",
+		"if": {
+			"pattern": "(E[02468])|(M[13579])"
+		},
+		"then": {
+			"not": {
+				"pattern": "(E[13579])|(M[2468])"
+			}
+		}
+	},
+	"patternProperties": {
+		"^[1-9](\\+[1-9])*$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^\\([1-9](\\+?[1-9])*\\)$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^\\[[1-9](\\+?[1-9])*\\]$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^[1-9](\\+[1-9])*\\+\\([1-9](\\+[1-9])*\\)$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^[1-9](\\+[1-9])*\\+\\[[1-9](\\+[1-9])*\\]$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^[EM][0-9](\\+[EM][0-9])*$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^\\([EM][0-9](\\+[EM][0-9])*\\)$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^\\[[EM][0-9](\\+[EM][0-9])*\\]$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^[EM][0-9](\\+[EM][0-9])*\\+\\([EM][0-9](\\+[EM][0-9])*\\)$": {
+			"$ref": "#/$defs/multipolarity"
+		},
+		"^[EM][0-9](\\+[EM][0-9])*\\+\\[[EM][0-9](\\+[EM][0-9])*\\]$": {
+			"$ref": "#/$defs/multipolarity"
+		}
+	},
+	"$defs": {
+		"multipolarity": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"reducedTransitionStrengths": {
+					"$ref": "gamma-transition-strengths.json"
+				},
+				"mixingRatios": {
+					"$ref": "mixing-ratios.json"
+				}
+			}
+		}
+	}
+}

@@ -217,7 +217,8 @@ Level-Matcher/
 
 ## 7. Workflow & Usage
 
-1. **Run full pipeline**: `.\Run_Pipeline.ps1` executes Dataset Parser → Level Matcher (detached subprocess; logs stream to `outputs/run_log.txt`) → Combined Visualizer. Detached spawn prevents VS Code freezes.
+0. **Graphical interface**: `python Level_Matcher_GUI.py`. Browse to any folder holding `.ens` files including the adopted file (its X records provide the dataset letters; `XREF.txt` is the fallback), select two or more datasets, click Run Matching. JSON and results are written inside that folder (`json/`, `outputs/`).
+1. **Run full pipeline (developer, uses `data/raw/`)**: `.\Run_Pipeline.ps1` executes Dataset Parser → Level Matcher (detached subprocess; logs stream to `outputs/run_log.txt`) → Combined Visualizer. Detached spawn prevents VS Code freezes.
 2. **Parse raw ENSDF files**: `Dataset_Parser.py` scans all `.ens` files in `data/raw/` and writes standardized JSON datasets to `data/json/`.
 3. **Select inference targets**: In `Level_Matcher.py`, set `inference_dataset_labels` (default `['K', 'L']`).
 4. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.

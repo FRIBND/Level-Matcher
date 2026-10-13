@@ -1,0 +1,110 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "multipole-moments.json",
+	"description": "A schema defining the electromagnetic moments of a nuclear level, e.g. electric quadrupole (Q) or magnetic dipole (mu).",
+	"type":"object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"patternProperties": {
+		"^E[1-9]$": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{
+					"$ref": "#/$defs/electric",
+					"properties":{
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				},
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/electric" }
+								]
+							}
+						}
+					}
+				}
+			]
+		},
+		"^M[1-9]$": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{
+					"$ref": "#/$defs/magnetic",
+					"properties":{
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				},
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/magnetic" }
+								]
+							}
+						}
+					}
+				}
+			]
+		}
+	},
+	"$defs": {
+		"electric": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"pattern": "^eb(\\^([234]|(\\{[13579]/2\\})))?$"
+				},
+				"isTentativeSign": {
+					"type": "boolean",
+					"const": true
+				},
+				"isAbsoluteValue": {
+					"type": "boolean",
+					"const": true
+				}
+			}
+		},
+		"magnetic": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"pattern": "^u_N(b(\\^([234]|(\\{[1357]/2\\})))?)?$"
+				},
+				"isTentativeSign": {
+					"type": "boolean",
+					"const": true
+				},
+				"isAbsoluteValue": {
+					"type": "boolean",
+					"const": true
+				}
+			}
+		}
+	}
+}

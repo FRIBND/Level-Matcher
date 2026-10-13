@@ -1,0 +1,140 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "fluorescence.json",
+	"description": "This schema describes the format for datasets summarizing nuclear-resonance fluorescence experiments.  Levels in these datasets have two unique properties: groundStateGammaWidth, which describes the gamma-decay width of this level to the ground state; and crossSection, which describes the probability to excite this level.  Note that the widths are given in different forms in different studies; this information is captured in the gammaWidthLabel property of the levels table.",
+    "type": "object",
+	"required": [ "header"],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "fluorescence"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"$ref": "levels-table.json",
+			"unevaluatedProperties": false,
+			"required": [ "levels" ],
+			"properties": {
+				"gammaWidthLabel": {
+					"description": "The form in which the groundStateGammaWidths are reported.  This should take the form of a mathematical expression which will be displayed as a column label in the data sheets.",
+					"type": "string"
+				},
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"groundStateGammaWidth": {
+								"description": "The decay width for this level to decay to the ground state.",
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "quantity.json" },
+									{
+										"type": "object",
+										"properties": {
+											"unit": {
+												"type": "string"
+											},
+											"comments": {
+												"$ref": "basic-comments.json"
+											}
+										}
+									}
+								]
+							},
+							"crossSection": {
+								"description": "The cross section for exciting this level in the experiment.",
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "quantity.json" },
+									{
+										"type": "object",
+										"properties": {
+											"unit": {
+												"type": "string"
+											},
+											"comments": {
+												"$ref": "basic-comments.json"
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife",
+										"crossSection",
+										"gammaWidth"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

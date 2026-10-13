@@ -1,0 +1,120 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "transfer.json",
+	"description": "This schema describes the format for transfer-reaction datasets.  The levels in this type of dataset may have, in addition to their normal properties, the angular momentum transferred in the reaction and a spectroscopic factor.  Note that, because spectroscopic factors are reported in a variety of formats in the literature ($S$, $C^2S$, $(2J+1)C^2S$, etc), a spectroscopicFactorLabel field is provided to capture this information in the levels table.",
+	"type": "object",
+	"required": [ "header" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "transfer"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"angularMomentumTransfer": {
+								"$ref": "angular-momentum-transfer.json"
+							},
+							"spectroscopicFactor": {
+								"description": "This object describes the spectroscopic factor for the specific transfer reaction in this dataset.  It is typically proportional to the ratio of the experimental cross section and the cross section calculated with Distorted-Wave Born Approximation (DWBA) theory.",
+								"type": "object",
+								"unevaluatedProperties": false,
+								"$ref": "quantity.json",
+								"properties": {
+									"isTentative": {
+										"type": "boolean",
+										"const": true
+									},
+									"comments": {
+										"$ref": "basic-comments.json"
+									}
+								}
+							}
+						}
+					}
+				},
+				"spectroscopicFactorLabel": {
+					"type": "string",
+					"description": "Spectroscopic factors are given in a variety of formats.  Specify what should appear in the NDS column header here."
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife",
+										"spectroscopicFactor",
+										"angularMomentumTransfer"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

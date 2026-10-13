@@ -1,0 +1,57 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "level-energy.json",
+	"description": "A schema describing the excitation energy of a nuclear level.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"allOf": [
+		{
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"unit": {
+					"type": "string",
+					"const": "keV"
+				},
+				"offset": {
+					"description": "This field is for floating levels which do not have a known excitation energy, i.e. they should up like 'X+20' in Nuclear Data Sheets.  This field holds that letter (X,Y,...) or the proton/neutron separation energy for unbound levels.",
+					"type": "string",
+					"pattern": "^([A-Z]|S[NP])$"
+				},
+				"isFixed": {
+					"description": "Indicates that this level is held fixed when minimizing to gamma-ray energies.  Absence indicates 'false.'",
+					"type": "boolean",
+					"const": true
+				}
+			}
+		},
+		{
+			"$ref": "measurements.json",
+			"properties": {
+				"measurements": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"allOf": [
+							{ "$ref": "measurement.json" },
+							{ "$ref": "quantity.json" },
+							{
+								"required": [ "unit" ],
+								"properties": {
+									"unit": {
+										"type": "string",
+										"const": "keV"
+									}
+								}
+							}
+						]
+					}
+				}
+			}
+		}
+	]
+}

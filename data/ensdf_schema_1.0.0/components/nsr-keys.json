@@ -1,0 +1,11 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "nsr-keys.json",
+	"description": "The format for NSR keys.  They always start with four numbers.  Two letters follow; currently case is not enforced, although the preferred case is on capitalized letter followed by a lower-case letter.  Finally, there are either two numbers or two letters (preferred capitalized, but not currently enforced).  Note that they are grouped in an array; this handles cases when publications are related, e.g. a conference proceedings and a later journal article describing the same data.",
+	"type": "array",
+	"minItems": 1,
+	"items":{
+		"type": "string",
+		"pattern": "^[0-9]{4}[a-zA-Z]{2}([0-9]{2}|[A-Za-z]{2})$"
+	}
+}

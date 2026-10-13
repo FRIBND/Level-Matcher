@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "gamma-polarization.json",
+	"description": "This schema describes the polarization state of a gamma ray.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"$ref": "quantity.json",
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"nsrKeys": {
+			"$ref": "nsr-keys.json"
+		},
+		"isAbsoluteValue": {
+			"type": "boolean",
+			"const": true
+		}
+	}
+}
+

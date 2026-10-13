@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "delayed-particle.json",
+	"description": "This schema describes the decay of beta-delayed protons/neutrons/alphas.  In the case of multiparticle decay (e.g. two-proton decay), the 'energy' field denotes the sum energy.",
+	"type": "object",
+	"$ref": "radiation.json",
+	"anyOf": [
+		{ "required": [ "energy" ] },
+		{ "required": [ "intensity" ] }
+	],
+	"unevaluatedProperties": false,
+	"properties": {
+		"angularMomentumTransfer": {
+			"$ref": "angular-momentum-transfer.json"
+		},
+		"intermediateStateEnergy": {
+			"description": "The excitation energy of the state populated by beta decay, before particle emission.",
+			"$ref": "radiation-energy.json"
+		}
+	}
+}

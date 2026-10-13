@@ -1,0 +1,119 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "delayed-particle-decay.json",
+	"description": "This schema describes datasets which contain information on beta-delayed decays of various kinds, such as beta-delayed neutron decay, beta-delayed multineutron decay, beta-delayed alpha decay, etc.  It does not describe beta-delayed fission.  An idiosyncracy of this type of dataset is that an element of the delayedParticle radiation type can actually describe multiparticle decay; typically this would be something like electron-capture delayed two-proton decay.  Consult the decayMode property to determine whether this is the case for a given dataset.",
+    "type": "object",
+	"required": [ "header", "parent", "decayMode" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] },
+		{ "required": [ "delayedParticlesTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "delayedParticleDecay"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"parent": {
+			"type": "object",
+			"$ref": "decay-parent.json",
+			"required": [ "qValue" ]
+		},
+		"decayMode": {
+			"type": "string",
+			"$ref": "decay-modes.json#/properties/common",
+			"pattern": "^(B[\\+-]|EC(\\+B\\+)?)",
+			"not": { "pattern": "f$" }
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"delayedParticles": {
+								"type": "array",
+								"minItems": 1,
+								"items": {
+									"type": "integer",
+									"minimum": 0
+								}
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		},
+		"delayedParticlesTable": {
+			"$ref": "delayed-particles-table.json"
+		}
+	}
+}

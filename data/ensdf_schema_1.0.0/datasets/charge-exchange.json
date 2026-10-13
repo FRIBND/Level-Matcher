@@ -1,0 +1,111 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "charge-exchange.json",
+	"description": "The schema describing data derived from charge-exchange reactions.  A typical reaction for this type of dataset is $(+3\text{He},t)$.  The unique data type in charge-exchange datasets is the Gamow-Teller strength or $B(GT)$.  $B(GT)$ is a property of levels in these datasets, but is not a required property.",
+	"type": "object",
+	"required": [ "header" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "chargeExchange"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"gamowTellerStrength": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"$ref": "quantity.json",
+								"properties": {
+									"measurements": {
+										"$ref": "measurements.json"
+									}
+								}
+							},
+							"angularMomentumTransfer": {
+								"$ref": "angular-momentum-transfer.json"
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife",
+										"angularMomentumTransfer",
+										"gamowTellerStrength"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

@@ -1,0 +1,336 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "internal-conversion.json",
+	"description": "This schema describes the format for internal-conversion coefficients (ICCs), both those derived from theory and those which are measured.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"properties": {
+		"coefficients": {
+			"description": "This property is for theoretical ICCs, and should not be used for measured values.  ",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"properties": {
+				"total": {
+					"description": "The total ICC for a transition.  It is the sum of the 'shells' property.",
+					"$ref": "#/$defs/theoryValue"
+				},
+				"pairCreation": {
+					"description": "The ICC corresponding to creation of an electron-positron pair for sufficiently energetic transitions.",
+					"$ref": "#/$defs/theoryValue"
+				},
+				"shells": {
+					"description": "The ICCs corresponding to internal conversion via a specific electron shell (K, L, ...).  Each shell is the sum of its corresponding subshell.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"patternProperties": {
+						"^[K-Q]\\+?$": {
+							"$ref": "#/$defs/theoryValue"
+						}
+					}
+				},
+				"subshells": {
+					"description": "The ICCs corresponding to internal conversion via a specific electron subshell (L1, M2, ...).",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"patternProperties": {
+						"^[L-Q][1-3]$": {
+							"$ref": "#/$defs/theoryValue"
+						},
+						"^[M-Q][45]$": {
+							"$ref": "#/$defs/theoryValue"
+						},
+						"^[N-Q][67]$": {
+							"$ref": "#/$defs/theoryValue"
+						},
+						"^[O-Q][89]$": {
+							"$ref": "#/$defs/theoryValue"
+						},
+						"^[PQ]1[01]$": {
+							"$ref": "#/$defs/theoryValue"
+						},
+						"^Q1[23]$": {
+							"$ref": "#/$defs/theoryValue"
+						}
+					}
+				},
+				"fractions":{
+					"deprecated": true,
+					"description": "It is the developers' understanding that this field is a hold-over from older calculators, and may be removed in the future.  Values in this field correspond to (e.g. for K/T) KC/(1+CC).",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"patternProperties": {
+						"[K-Q]\\+?/T": {
+							"$ref": "#/$defs/theoryValue"
+						}
+					}
+				}
+			}
+		},
+		"measurements": {
+			"description": "The space for experimentally derived ICCs.",
+			"type": "object",
+			"additionalProperties": false,
+			"minProperties": 1,
+			"properties": {
+				"total": {
+					"description": "As with the theoretical ICCs, this is the total coefficient.",
+					"$ref": "#/$defs/conversionMeasurement"
+				},
+				"pairCreation": {
+					"description": "Experimental analogue to the theoretical electron-positron creation coefficient.",
+					"$ref": "#/$defs/conversionMeasurement"
+				},
+				"shells": {
+					"description": "Experimental analogue to the theoretical shell coefficients.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"patternProperties": {
+						"^[K-Q]\\+?$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						}
+					}
+				},
+				"subshells": {
+					"description": "Experimental analogue to the theoretical subshell coefficients.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"patternProperties": {
+						"^[L-Q][1-3]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						},
+						"^[M-Q][45]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						},
+						"^[N-Q][67]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						},
+						"^[O-Q][89]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						},
+						"^[PQ]1[01]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						},
+						"^Q1[23]$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						}
+					}
+				},
+				"sums": {
+					"description": "In some experiments, it is not possible to resolve individual electron lines for some transitions.  This space is for the summed intensities/coefficients for such lines.  For example, one might give the coefficient for the L2+L3 subshells as a single number.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"propertyNames": {
+						"allOf": [
+							{
+								"description": "If 'K' is present, then it must be the first shell; it cannot be followed by a subshell number; and it can never be repeated.",
+								"if": {
+									"pattern": "K"
+								},
+								"then": {
+									"pattern": "^K(?![0-9])[^K]*$"
+								}
+							},
+							{
+								"description": "If 'L' is present, it cannot be preceded by 'M-Q'.  Additionally, if 'L' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "L"
+								},
+								"then": {
+									"pattern": "^[^LM-Q]*(L[^L]*$|(?=L[1-3](\\+L[2-3])[^L]*$)(L1)?(\\+?L2)?(\\+?L3)?)" 
+								}
+							},
+							{
+								"description": "If 'M' is present, it cannot be preceded by 'N-Q'.  Additionally, if 'M' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "M"
+								},
+								"then": {
+									"pattern": "^[^MN-Q]*(M[^M]*$|(?=M[1-5](\\+M[2-5]){1,3}[^M]*$)(M1)?(\\+?M2)?(\\+?M3)?(\\+?M4)?(\\+?M5)?)" 
+								}
+							},
+							{
+								"description": "If 'N' is present, it cannot be preceded by 'O-Q'.  Additionally, if 'N' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "N"
+								},
+								"then": {
+									"pattern": "^[^NO-Q]*(N[^N]*$|(?=N[1-7](\\+N[2-7]){1,5}[^N]*$)(N1)?(\\+?N2)?(\\+?N3)?(\\+?N4)?(\\+?N5)?(\\+?N6)?(\\+?N7)?)"
+								}
+							},
+							{
+								"description": "If 'O' is present, it cannot be preceded by 'P' or 'Q'.  Additionally, if 'O' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "O"
+								},
+								"then": {
+									"pattern": "^[^OPQ]*(O[^O]*$|(?=O[1-9](\\+O[2-9]){1,7}[^O]*$)(O1)?(\\+?O2)?(\\+?O3)?(\\+?O4)?(\\+?O5)?(\\+?O6)?(\\+?O7)?(\\+?O8)?(\\+?O9)?)"
+								}
+							},
+							{
+								"description": "If 'P' is present, it cannot be preceded by 'Q'.  Additionally, if 'P' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "P"
+								},
+								"then": {
+									"pattern": "^[^PQ]*(P[^P]*$|(?=P([1-9]|1[0-1])(\\+P([2-9]|1[0-1])){1,9}[^P]*$)(P1)?(\\+?P2)?(\\+?P3)?(\\+?P4)?(\\+?P5)?(\\+?P6)?(\\+?P7)?(\\+?P8)?(\\+?P9)?(\\+?P10)?(\\+?P11)?)"
+								}
+							},
+							{
+								"description": "If 'Q' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.",
+								"if": {
+									"pattern": "Q"
+								},
+								"then": {
+									"pattern": "^[^Q]*(Q[^Q]*$|(?=Q([1-9]|1[0-3])(\\+Q([2-9]|1[0-3])){1,11}[^Q]*$)(Q1)?(\\+?Q2)?(\\+?Q3)?(\\+?Q4)?(\\+?Q5)?(\\+?Q6)?(\\+?Q7)?(\\+?Q8)?(\\+?Q9)?(\\+?Q10)?(\\+?Q11)?(\\+?Q12)?(\\+?Q13)?)"
+								}
+							}
+						]
+					},
+					"patternProperties": {
+						"^[K-Q]([1-9]|1[1-3])?(\\+[K-Q]([1-9]|1[0-3])?)+$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						}
+					}
+				},
+				"ratios": {
+					"description": "Sometimes electron lines can be measured but the corresponding gamma-ray is not observed.  In this case, the conversion coefficient itself cannot be derived, but the ratio between ICCs can still be informative.  This stpace stores that information.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": false,
+					"propertyNames": {
+						"allOf": [
+							{
+								"description": "If 'K' is present, then it must be the first shell; it cannot be followed by a subshell number; and it can never be repeated.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "K"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)K(?![0-9])[^K]*($|\\)|/)"
+								}
+							},
+							{
+								"description": "If 'L' is present, it cannot be preceded by 'M-Q'.  Additionally, if 'L' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "L"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)[^LM-Q]*(L[^L]*|(?=L[1-3](\\+L[2-3])[^L]*($|\\)|/))(L1)?(\\+?L2)?(\\+?L3)?)($|\\)|/)" 
+								}
+							},
+							{
+								"description": "If 'M' is present, it cannot be preceded by 'N-Q'.  Additionally, if 'M' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "M"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)[^MN-Q]*(M[^M]*|(?=M[1-5](\\+M[2-5]){1,3}[^M]*($|\\)|/))(M1)?(\\+?M2)?(\\+?M3)?(\\+?M4)?(\\+?M5)?)($|\\)|/)" 
+								}
+							},
+							{
+								"description": "If 'N' is present, it cannot be preceded by 'O-Q'.  Additionally, if 'N' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "N"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)[^NO-Q]*(N[^N]*|(?=N[1-7](\\+N[2-7]){1,5}[^N]*($|\\)|/))(N1)?(\\+?N2)?(\\+?N3)?(\\+?N4)?(\\+?N5)?(\\+?N6)?(\\+?N7)?)($|\\)|/)"
+								}
+							},
+							{
+								"description": "If 'O' is present, it cannot be preceded by 'P' or 'Q'.  Additionally, if 'O' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "O"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)[^OPQ]*(O[^O]*|(?=O[1-9](\\+O[2-9]){1,7}[^O]*($|\\)|/))(O1)?(\\+?O2)?(\\+?O3)?(\\+?O4)?(\\+?O5)?(\\+?O6)?(\\+?O7)?(\\+?O8)?(\\+?O9)?)($|\\)|/)"
+								}
+							},
+							{
+								"description": "If 'P' is present, it cannot be preceded by 'Q'.  Additionally, if 'P' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "P"
+								},
+								"then": {
+									"pattern": "(^|\\(|/)[^PQ]*(P[^P]*|(?=P([1-9]|1[0-1])(\\+P([2-9]|1[0-1])){1,9}[^P]*($|\\)|/))(P1)?(\\+?P2)?(\\+?P3)?(\\+?P4)?(\\+?P5)?(\\+?P6)?(\\+?P7)?(\\+?P8)?(\\+?P9)?(\\+?P10)?(\\+?P11)?)($|\\)|/)"
+								}
+							},
+							{
+								"description": "If 'Q' appears more than once, it can only do so as a combination of subshells in order of increasing index and they all must be grouped together.  All subshells cannot simultaneously be present.  These rules apply separately to numerator and denominator.",
+								"if": {
+									"pattern": "Q"
+								},
+								"then": {
+									"pattern": "^[^Q]*(Q[^Q]*|(?=Q([1-9]|1[0-3])(\\+Q([2-9]|1[0-3])){1,11}[^Q]*($|\\)|/))(Q1)?(\\+?Q2)?(\\+?Q3)?(\\+?Q4)?(\\+?Q5)?(\\+?Q6)?(\\+?Q7)?(\\+?Q8)?(\\+?Q9)?(\\+?Q10)?(\\+?Q11)?(\\+?Q12)?(\\+?Q13)?)($|\\)|/)"
+								}
+							}
+						]
+					},
+					"patternProperties": {
+						"^([K-Q](?:[1-9]|1[0-3])?|\\([K-Q]([1-9]|1[1-3])?(\\+[K-Q]([1-9]|1[0-3])?)+\\))/(?!\\1$)(?:[K-Q](?:[1-9]|1[0-3])?|\\([K-Q]([1-9]|1[1-3])?(\\+[K-Q]([1-9]|1[0-3])?)+\\))$": {
+							"$ref": "#/$defs/conversionMeasurement"
+						}
+					}
+				}
+			}
+		}
+	},
+	"$defs": {
+		"conversionMeasurement": {
+			"description": "Measured ICCs can be given as either the coefficient (most common) or the electron-intensity directly (uncommon).  They should be stored in the corresponding 'coefficients' or 'intensities' property.",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"properties": {
+				"coefficients": {
+					"$ref": "#/$defs/measurementArray"
+				},
+				"intensities": {
+					"$ref": "#/$defs/measurementArray"
+				}
+			}
+		},
+		"measurementArray": {
+			"description": "Measured ICCs are never evaluated, i.e. they are not averaged to create an adopted value.  This structure is like the measurements object on evaluated properties, but without the associated properties for evaluated quantities.",
+			"type": "object",
+			"additionalProperties": false,
+			"required": [ "values" ],
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"values": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "quantity.json",
+						"properties": {
+							"nsrKeys": {
+								"$ref": "nsr-keys.json"
+							}
+						}
+					}
+				}
+			}
+		},
+		"theoryValue": {
+			"description": "The structure for storing theoretical ICCs.",
+			"type": "object",
+			"$ref": "quantity.json",
+			"unevaluatedProperties": false,
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		}
+	}
+}

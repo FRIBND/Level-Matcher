@@ -1,0 +1,75 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "spin-parity.json",
+	"description": "Spin-parity object for nuclear levels.  It takes the form of an array, with each element of the array being a possible spin-parity.  Spins are tracked as 'twice spin' so that they are integer-valued.  Both spin and parity can be marked as tentative.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [ "values", "stringRepresentation" ],
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"isFromSystematics": {
+			"type": "boolean",
+			"const": true
+		},
+		"stringRepresentation": {
+			"description": "This is the ASCII representation of the spin-parity object, similar to what would be printed in Nuclear Data Sheets.",
+			"type": "string",
+			"minLength": 1
+		},
+		"nsrKeys": {
+			"$ref": "nsr-keys.json"
+		},
+		"values": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"unevaluatedProperties": false,
+				"dependentRequired": {
+					"isTentativeSpin": ["twoTimesSpin"],
+					"isTentativeParity": ["parity"]
+				},
+				"anyOf": [
+					{ "required": [ "twoTimesSpin" ] },
+					{ "required": [ "parity" ] }
+				],
+				"properties": {
+					"twoTimesSpin": {
+						"type": "integer",
+						"minimum": 0
+					},
+					"isTentativeSpin": {
+						"type": "boolean",
+						"const": true
+					},
+					"parity": {
+						"type": "string",
+						"enum": ["+", "-"]
+					},
+					"isTentativeParity": {
+						"type": "boolean",
+						"const": true
+					},
+					"relativeTo": {
+						"type": "object",
+						"description": "This spin is relative to that of another level.  For example, J+2 would be expressed as { 'twoTimesSpin': 4, 'relativeTo': { 'label': 'J' }.",
+						"required": [ "label" ],
+						"additionalProperties": false,
+						"properties": {
+							"label": {
+								"type": "string"
+							},
+							"approximateValue": {
+								"type": "integer",
+								"minimum": 0,
+								"description": "For cases when the relative value of the spin is approximately known.  Should follow the twiceSpin convention."
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

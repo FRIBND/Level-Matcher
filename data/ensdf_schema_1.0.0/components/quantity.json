@@ -1,0 +1,117 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "quantity.json",
+	"description": "This is the fundamental building block for continuous quantities in ENSDF.  It allows additional properties, but ensures that at least a value and some kind of uncertainty are present.",
+	"type": "object",
+	"required": ["value", "uncertainty", "evaluatorInput" ],
+	"properties": {
+		"value": {
+			"description": "The central value of approximations and quantities with uncertainties.  In the case of a limit, it is the extreme value of the limit, e.g. the '20' in '<20.'  In the case of a range, it does not have a probabilistic interpretation; it is simply the midpoint between the ends of the range.",
+			"type": "number"
+		},
+		"evaluatorInput": {
+			"description": "This field is a compatibility aid for tools which may need to read the old string-style values from the database.  Users should expect this field to be removed in the near future.",
+			"type": "string",
+			"anyOf": [
+				{ "pattern": "^([A-Z]+\\+|[\\+-])?[0-9]*(\\.[0-9]*)?([eE][\\+-]?[0-9]+)? [0-9]+$" },
+				{ "pattern": "^([A-Z]+\\+|[\\+-])?[0-9]*(\\.[0-9]*)?([eE][\\+-]?[0-9]+)? \\+[0-9]+-[0-9]+$" },
+				{ "pattern": "^([A-Z]+\\+|[\\+-])?[0-9]*(\\.[0-9]*)?([eE][\\+-]?[0-9]+)?(( AP)|( [GL][TE]))?$" },
+				{ "pattern": "^[\\+-]?[0-9]*(\\.[0-9]*)?([eE][\\+-]?[0-9]+)? L[ET] X L[ET] [\\+-]?[0-9]*(\\.[0-9]*)?([eE][\\+-]?[0-9]+)?$" }
+			]
+		},
+		"uncertainty": {
+			"type": "object",
+			"description": "The uncertainty associated with a quantity.  It must always have, at minimum, a 'type.'",
+			"unevaluatedProperties": false,
+			"required": [ "type" ],
+			"properties": {
+				"type": {
+					"type": "string"
+				}
+			},
+			"anyOf": [
+				{
+					"description": "The format for a quantity with symmetric error bars denoting a 1-sigma/68% confidence interval.",
+					"required": ["value"],
+					"properties": {
+						"type": {
+							"const": "symmetric"
+						},
+						"value": {
+							"type": "number",
+							"exclusiveMinimum": 0
+						}
+					}
+				},
+				{
+					"description": "The format for a quantity with asymmetric error bars, again describing a 1-sigma/68% confidence limit.",
+					"required": [
+						"upperLimit",
+						"lowerLimit"
+					],
+					"properties": {
+						"type": {
+							"const": "asymmetric"
+						},
+						"upperLimit": {
+							"type": "number",
+							"exclusiveMinimum": 0
+						},
+						"lowerLimit": {
+							"type": "number",
+							"exclusiveMinimum": 0
+						}
+					}
+				},
+				{
+					"description": "The format for upper and lower limits.",
+					"required": [ "limitType" ],
+					"properties": {
+						"type": {
+							"const": "limit"
+						},
+						"isInclusive": {
+							"type": "boolean",
+							"const": true
+						},
+						"limitType": {
+							"type": "string",
+							"enum": ["upper","lower"]
+						}
+					}
+				},
+				{
+					"description": "Format for when there is no uncertainty, either because the value is known only approximately, or no uncertainty is reported in a publication.",
+					"properties": {
+						"type": {
+							"enum": [ "approximation", "none" ]
+						}
+					}
+				},
+				{
+					"description": "The format for a range, in which no probability-density function can be associated with a value.  Use this, for example, when two different measurements set limits on a value.",
+					"required": [ "upperLimit", "lowerLimit" ],
+					"properties": {
+						"type": {
+							"const": "range"
+						},
+						"upperLimit": {
+							"type": "number"
+						},
+						"lowerLimit": {
+							"type": "number"
+						},
+						"upperInclusive": {
+							"type": "boolean",
+							"const": true
+						},
+						"lowerInclusive": {
+							"type": "boolean",
+							"const": true
+						}
+					}
+				}
+			]
+		}
+	}
+}

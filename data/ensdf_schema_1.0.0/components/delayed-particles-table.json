@@ -1,0 +1,42 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "delayed-particles-table.json",
+	"description": "The collection of information necessary to construct the delayed-particles table in Nuclear Data Sheets.",
+	"type": "object",
+	"required": [ "delayedParticles" ],
+	"additionalProperties": false,
+	"properties": {
+		"delayedParticles": {
+			"description": "The collection of delayed particles which were observed in this dataset.  Unplaced radiation has no 'finalLevel' field, which placed radiation will.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "delayed-particle.json"
+			}
+		},
+		"comments": {
+			"type": "array",
+			"$ref": "table-comments.json",
+			"items": {
+				"type": "object",
+				"properties": {
+					"columns": {
+						"type": "object",
+						"propertyNames": {
+							"enum": [
+								"energy",
+								"intensity",
+								"angularMomentum",
+								"intermediateStateEnergy"
+							]
+						}
+					}
+				}
+			}
+		},
+		"normalization": {
+			"description": "The normalization factor for delayed-particle intensities.",
+			"$ref": "decay-normalization.json"
+		}
+	}
+}

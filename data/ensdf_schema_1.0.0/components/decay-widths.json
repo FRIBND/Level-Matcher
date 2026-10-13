@@ -1,0 +1,133 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "decay-widths.json",
+	"description": "The widths of the various decay branches that a level can have.",
+	"type": "object",
+	"additionalProperties": false,
+	"minProperties": 1,
+	"properties": {
+		"totalWidth": {
+			"description": "The total width of a level.",
+			"$ref": "#/$defs/absoluteWidth"
+		},
+		"partialWidths": {
+			"description": "The width associated with each decay channel that a level has.",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"propertyNames": {
+				"$ref": "decay-modes.json#/properties/partialWidth"
+			},
+			"patternProperties": {
+				".+": {
+					"$ref": "#/$defs/absoluteWidth"
+				}
+			}
+		},
+		"fractionalPartialWidths": {
+			"description": "Partial widths given as a fraction of the total width.",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"propertyNames": {
+				"$ref": "decay-modes.json#/properties/partialWidth"
+			},
+			"patternProperties": {
+				".+": {
+					"$ref": "#/$defs/relativeWidth"
+				}
+			}
+		},
+		"relativePartialWidths": {
+			"description": "Partial widths given relative to another partial width.",
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"propertyNames": {
+				"$ref": "decay-modes.json#/properties/relativePartialWidth"
+			},
+			"patternProperties": {
+				".+": {
+					"$ref": "#/$defs/relativeWidth"
+				}
+			}
+		}
+	},
+	"$defs": {
+		"absoluteWidth": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{ "$ref": "quantity.json" },
+				{
+					"type": "object",
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "quantity.json" },
+									{
+										"required": [ "unit" ],
+										"properties": {
+											"unit": {
+												"type": "string",
+												"enum": ["eV", "keV", "MeV"]
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				{
+					"required": [ "unit" ],
+					"properties": {
+						"unit": {
+							"type": "string",
+							"enum": [ "eV", "keV", "MeV" ]
+						},
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				}
+			]
+		},
+		"relativeWidth": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{
+					"$ref": "quantity.json",
+					"properties": {
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				},
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "quantity.json" }
+								]
+							}
+						}
+					}
+				}
+			]
+		}
+	}
+}

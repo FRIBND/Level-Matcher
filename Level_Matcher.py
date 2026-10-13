@@ -7,6 +7,8 @@ from Feature_Engineer import extract_features, generate_synthetic_training_data,
 from Level_Clusterer import perform_clustering_and_output
 from Training_Metrics_Visualizer import visualize_training_metrics
 import warnings
+import argparse
+import os
 
 """
 # High-level Structure and Workflow Explanation:
@@ -93,6 +95,20 @@ feature_names = ['Energy_Similarity', 'Spin_Similarity', 'Parity_Similarity',
                  'Specificity', 'Gamma_Decay_Pattern_Similarity']
 
 if __name__ == "__main__":
+    # Optional command-line overrides (used by Level_Matcher_GUI.py); defaults preserve the original behavior.
+    argument_parser = argparse.ArgumentParser(description="Train the matcher on synthetic data and run pairwise inference.")
+    argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to match (default: inference_dataset_labels)")
+    argument_parser.add_argument("--json_dir", default=None, help="Directory with test_dataset_{letter}.json files (default: data/json)")
+    argument_parser.add_argument("--output_dir", default="outputs", help="Root directory for pairwise/, clustering/, figures/ (default: outputs)")
+    command_line_arguments = argument_parser.parse_args()
+    if command_line_arguments.labels:
+        inference_dataset_labels = command_line_arguments.labels
+    pairwise_output_path = os.path.join(command_line_arguments.output_dir, 'pairwise', 'Output_Level_Pairwise_Inference.txt')
+    clustering_output_path = os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt')
+    training_figure_path = os.path.join(command_line_arguments.output_dir, 'figures', 'Training_Metrics_Diagnostic.png')
+    os.makedirs(os.path.dirname(pairwise_output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(clustering_output_path), exist_ok=True)
+
     # ==========================================
     # Main Execution Pipeline:
     # 1. Synthetic Training Data Generation
@@ -219,7 +235,7 @@ if __name__ == "__main__":
         'best_iteration': model_xgboost.best_iteration,
         'maximum_iterations': 2000
     }
-    visualize_training_metrics(xgboost_metrics_data)
+    visualize_training_metrics(xgboost_metrics_data, training_figure_path)
 
     # ==========================================
     # Step 3: Test Data Ingestion
@@ -229,7 +245,7 @@ if __name__ == "__main__":
     # solely for inference; they were never seen during the synthetic training phase.
 
     print("Ingesting Test Data...")
-    levels = parse_json_datasets(inference_dataset_labels)
+    levels = parse_json_datasets(inference_dataset_labels, command_line_arguments.json_dir)
     dataframe = pd.DataFrame(levels)
     dataframe['level_id'] = dataframe.apply(lambda row: f"{row['dataset_code']}_{int(row['energy_value'])}", axis=1)
 
@@ -284,7 +300,7 @@ if __name__ == "__main__":
 
     # Write pairwise inference results to file (Side-by-Side Comparison)
     threshold_percent = pairwise_output_threshold * 100
-    with open('outputs/pairwise/Output_Level_Pairwise_Inference.txt', 'w', encoding='utf-8') as output_file:
+    with open(pairwise_output_path, 'w', encoding='utf-8') as output_file:
         output_file.write(f"=== PAIRWISE INFERENCE RESULTS (>{threshold_percent:.1f}%) ===\n")
         output_file.write(f"Model: XGBoost\n")
         output_file.write(f"Total Level Pairs Found: {len(all_pairwise_results_for_display)}\n\n")
@@ -298,11 +314,11 @@ if __name__ == "__main__":
                 f"Parity_Similarity={parity_similarity:.2f}, Specificity={specificity:.2f}, Gamma_Pattern_Similarity={gamma_decay_pattern_similarity:.2f}\n\n"
             )
     
-    print(f"\n[INFO] Pairwise Inference Complete: {len(all_pairwise_results_for_display)} level pairs (>{threshold_percent:.1f}%) written to 'outputs/pairwise/Output_Level_Pairwise_Inference.txt'")
+    print(f"\n[INFO] Pairwise Inference Complete: {len(all_pairwise_results_for_display)} level pairs (>{threshold_percent:.1f}%) written to '{pairwise_output_path}'")
 
     # ==========================================
     # Step 5: Graph-Based Clustering
     # ==========================================
     
     # Execute clustering with XGBoost results
-    perform_clustering_and_output(matching_level_pairs_xgboost, model_xgboost, "outputs/clustering/Output_Clustering_Results_XGBoost.txt", "XGBoost", dataframe)
+    perform_clustering_and_output(matching_level_pairs_xgboost, model_xgboost, clustering_output_path, "XGBoost", dataframe)

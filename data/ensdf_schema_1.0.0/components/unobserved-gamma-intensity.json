@@ -1,0 +1,13 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "unobserved-gamma-intensity.json",
+	"description": "Sometimes it is possible to infer that a level must emit more gamma rays than have been observed, e.g. through intensity balances.  This field is a place to store that unaccounted balance.",
+	"type": "object",
+    "unevaluatedProperties": false,
+	"$ref": "quantity.json",
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		}
+	}
+}

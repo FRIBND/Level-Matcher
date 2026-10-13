@@ -1,0 +1,27 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "radiation.json",
+	"description": "This is a template for all radiation types in ENSDF, meant to guarantee a minimum uniform interface.  Additional properties will be specified by more specialized schemata.",
+	"type": "object",
+	"properties": {
+		"comments":{
+			"$ref": "basic-comments.json"
+		},
+		"energy": {
+			"$ref": "radiation-energy.json"
+		},
+		"intensity": {
+			"$ref": "radiation-intensity.json"
+		},
+		"existence": {
+			"description": "Describes the confidence with which this radiation is placed.  Absence indicates it is confidently placed.  'Inferred' means that there is evidence for this radiation (e.g. intensity balance), but it has not been directly observed.  'Uncertain' indicates that there is reason to question the existence of this radiation.",
+			"type": "string",
+			"enum": [ "inferred", "uncertain" ]
+		},
+		"finalLevel": {
+			"description": "The index of the level to which this radiation decays.  Absence indicates an unplaced radiation.",
+			"type": "integer",
+			"minimum": 0
+		}
+	}
+}

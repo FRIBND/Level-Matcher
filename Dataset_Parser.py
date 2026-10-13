@@ -496,6 +496,8 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         return
 
     for ens_filename in ens_files:
+        # Extract the nucleus/target prefix from the .ens filename (e.g., 'S34' from 'S34_30si_a_g_a_n_resonances.ens')
+        file_prefix = ens_filename.split('_')[0].rstrip('.ens') if '_' in ens_filename else ens_filename.rstrip('.ens')
         filepath = os.path.join(raw_dir, ens_filename)
 
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -601,7 +603,9 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         if gammas_table_list:
             output_data_structure["gammasTable"] = {"gammas": gammas_table_list}
 
-        output_path = os.path.join(os.path.abspath(output_dir), f"test_dataset_{letter}.json")
+        # Use prefix from the .ens filename and append '_lowercase' for lowercase letters to avoid case collisions.
+        file_label = f"{letter}_lowercase" if letter.islower() else letter
+        output_path = os.path.join(os.path.abspath(output_dir), f"{file_prefix}_dataset_{file_label}.json")
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output_data_structure, f, indent=4)
         print(f"Dataset {letter} saved to {output_path}")

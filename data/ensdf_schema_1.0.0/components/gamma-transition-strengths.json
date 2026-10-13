@@ -1,0 +1,621 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "gamma-transition-strengths.json",
+	"type": "object",
+	"description": "Reduced transition probability downward.",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"propertyNames": {
+		"pattern": "^[EM][1-9]$"
+	},
+	"patternProperties": {
+		".+": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"properties": {
+				"unit": {},
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		"^E1$": {
+			"type": "object",
+			"$ref": "#/$defs/E1",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E1" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E2$": {
+			"type": "object",
+			"$ref": "#/$defs/E2",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"allOf": [
+									{ "unevaluatedProperties": false },
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E2" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E3$": {
+			"type": "object",
+			"$ref": "#/$defs/E3",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E3" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E4$": {
+			"type": "object",
+			"$ref": "#/$defs/E4",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E4" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E5$": {
+			"type": "object",
+			"$ref": "#/$defs/E5",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E5" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E6$": {
+			"type": "object",
+			"$ref": "#/$defs/E6",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E6" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E7$": {
+			"type": "object",
+			"$ref": "#/$defs/E7",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E7" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E8$": {
+			"type": "object",
+			"$ref": "#/$defs/E8",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E8" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^E9$": {
+			"type": "object",
+			"$ref": "#/$defs/E9",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/E9" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M1$": {
+			"type": "object",
+			"$ref": "#/$defs/M1",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M1" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M2$": {
+			"type": "object",
+			"$ref": "#/$defs/M2",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M2" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M3$": {
+			"type": "object",
+			"$ref": "#/$defs/M3",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M3" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M4$": {
+			"type": "object",
+			"$ref": "#/$defs/M4",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M4" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M5$": {
+			"type": "object",
+			"$ref": "#/$defs/M5",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M5" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M6$": {
+			"type": "object",
+			"$ref": "#/$defs/M6",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M6" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M7$": {
+			"type": "object",
+			"$ref": "#/$defs/M7",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M7" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M8$": {
+			"type": "object",
+			"$ref": "#/$defs/M8",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M8" }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"^M9$": {
+			"type": "object",
+			"$ref": "#/$defs/M9",
+			"properties": {
+				"measurements": {
+					"type": "object",
+					"properties": {
+						"measuredValues": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/M9" }
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"$defs": {
+		"E1": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b" ]
+				}
+			}
+		},
+		"E2": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^2" ]
+				}
+			}
+		},
+		"E3": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^3" ]
+				}
+			}
+		},
+		"E4": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^4" ]
+				}
+			}
+		},
+		"E5": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^5" ]
+				}
+			}
+		},
+		"E6": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^6" ]
+				}
+			}
+		},
+		"E7": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^7" ]
+				}
+			}
+		},
+		"E8": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^8" ]
+				}
+			}
+		},
+		"E9": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "e^2b^9" ]
+				}
+			}
+		},
+		"M1": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_N" ]
+				}
+			}
+		},
+		"M2": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb" ]
+				}
+			}
+		},
+		"M3": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^2" ]
+				}
+			}
+		},
+		"M4": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^3" ]
+				}
+			}
+		},
+		"M5": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^4" ]
+				}
+			}
+		},
+		"M6": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^5" ]
+				}
+			}
+		},
+		"M7": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^6" ]
+				}
+			}
+		},
+		"M8": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^7" ]
+				}
+			}
+		},
+		"M9": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": [ "W.u.", "u^2_Nb^8" ]
+				}
+			}
+		}
+	}
+}
+

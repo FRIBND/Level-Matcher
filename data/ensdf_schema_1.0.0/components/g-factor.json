@@ -1,0 +1,45 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "g-factor.json",
+	"description": "A schema for the nuclear g-factor.  While it is simply a number, it is one of the quantities in ENSDF which can be an absolute value.  It is also possible for the sign to be known only tentatively.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"allOf": [
+		{
+			"$ref": "#/$defs/factor",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		{
+			"$ref": "measurements.json",
+			"properties": {
+				"measurements": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"allOf": [
+							{ "$ref": "measurement.json" },
+							{ "$ref": "#/$defs/factor" }
+						]
+					}
+				}
+			}
+		}
+	],
+	"$defs": {
+		"factor": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"properties": {
+				"isAbsoluteValue":{
+					"type": "boolean",
+					"const": true
+				}
+			}
+		}
+	}
+}

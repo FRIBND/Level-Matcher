@@ -1,0 +1,57 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "gamma.json",
+	"type": "object",
+	"$ref": "radiation.json",
+	"description": "A gamma-ray transition from one nuclear state to another.",
+	"unevaluatedProperties": false,
+	"required": [ "energy" ],
+	"dependentRequired": {
+		"initialLevel": [ "finalLevel" ],
+		"finalLevel": [ "initialLevel" ]
+	},
+	"properties": {
+		"multiplyPlacedWithIntensity": {
+			"description": "Sometimes gammas are identified as degenerate in a study, and the authors may apportion the intensity ('divided') or not ('undivided').  It may also not be clear from the text ('unknown').",
+			"type": "string",
+			"enum": [ "divided", "undivided", "unknown" ]
+		},
+		"initialLevel": {
+			"type": "integer",
+			"description": "The index of the level from which this radiation decays.  Absence indicates an unplaced radiation.  Note that one must either specify both initialLevel and finalLevel, or neither.",
+			"minimum": 1
+		},
+		"energy": {
+			"$ref": "radiation-energy.json"
+		},
+		"width": {
+			"$ref": "decay-widths.json#/properties/totalWidth"
+		},
+		"transitionIntensity": {
+			"description": "The measured intensity of this gamma ray and its associated conversion electrons.",
+			"$ref": "radiation-intensity.json"
+		},
+		"absoluteIntensity": {
+			"description": "Intensity per 100 decays of the parent in a decay dataset.",
+			"$ref": "radiation-intensity.json"
+		},
+		"internalConversion": {
+			"$ref": "internal-conversion.json"
+		},
+		"multipolarity": {
+			"$ref": "gamma-multipolarity.json"
+		},
+		"reducedTransitionStrengths": {
+			"$ref": "gamma-transition-strengths.json"
+		},
+		"angularCoefficients": {
+			"$ref": "angular-coefficients.json"
+		},
+		"dco": {
+			"$ref": "dco.json"
+		},
+		"polarization": {
+			"$ref": "gamma-polarization.json"
+		}
+	}
+}

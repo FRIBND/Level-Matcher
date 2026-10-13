@@ -1,0 +1,32 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "references.json",
+	"description": "This structure collects the information pertaining to the references used to construct a dataset.",
+	"type": "object",
+	"additionalProperties": false,
+	"minProperties": 1,
+	"properties": {
+		"cited": {
+			"description": "These are the main references consulted during the evaluation.  NSR keys are required; a summary should also be provided, but historically this has not always been the case.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [ "nsrKeys" ],
+				"properties": {
+					"nsrKeys": {
+						"$ref": "nsr-keys.json"
+					},
+					"summary": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"other": {
+			"description": "References to measurements relevant to the present dataset, but which did not contribute data to the evaluation.",
+			"$ref": "nsr-keys.json"
+		}
+	}
+}

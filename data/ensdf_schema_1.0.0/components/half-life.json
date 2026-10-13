@@ -1,0 +1,48 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "half-life.json",
+	"description": "The schema for the half-life of a nuclear state.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"allOf": [
+		{
+			"$ref": "#/$defs/half-life",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		{
+			"$ref": "measurements.json",
+			"properties": {
+				"measurements": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"allOf": [
+							{ "$ref": "measurement.json" },
+							{ "$ref": "#/$defs/half-life" }
+						]
+					}
+				}
+			}
+		}
+	],
+	"$defs": {
+		"half-life": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"enum": ["Qy","Ry","Yy","Zy","Ey","Py","Ty","Gy",
+							 "My","ky","y","d","h","m","s","ms","us",
+							 "ns","ps","fs","as","zs"]
+				}
+			}
+		}
+	}
+}

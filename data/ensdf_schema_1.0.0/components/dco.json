@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "dco.json",
+	"description": "This schema describes DCO-ratio measurements.  Aside from the basic quantity template, a 'flag' is often given to indicate additional information provided in comments.  For example, 'D' and 'Q' are often appended to indicate that the gating transition was a dipole or quadropole transition, respectively.  Note that this schema may be revised in the future to provide a more complete means to capture this information.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"$ref": "quantity.json",
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"flag": {
+			"type": "string"
+		},
+		"nsrKeys": {
+			"$ref": "nsr-keys.json"
+		}
+	}
+}

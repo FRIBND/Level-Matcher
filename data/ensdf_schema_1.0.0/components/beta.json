@@ -1,0 +1,67 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "beta.json",
+	"description": "This schema describes the data contained in beta-particle records in beta-decay datasets.  Note that the 'intensity' field from radiation.json applies to beta-minus intensity, or the combined beta-plus/electron-capture intensity, as determined by the dataset's decay mode.",
+	"type": "object",
+	"$ref": "radiation.json",
+	"required": [ "energy", "finalLevel" ],
+	"unevaluatedProperties": false,
+	"properties": {
+		"energy": {
+			"description": "This is the endpoint energy of the decay.",
+			"type": "object",
+			"not": {
+				"required": [ "measurements" ]
+			}
+		},
+		"averageEnergy": {
+			"description": "The average energy of the emitted beta particle.  This is always calculated during the evaluation, and measurements are not provided.",
+			"type": "object",
+			"$ref": "radiation-energy.json",
+			"not": {
+				"required": [ "measurements" ]
+			}
+		},
+		"betaIntensity": {
+			"description": "The fraction of EC+B+ decay which goes through the beta branch.",
+			"$ref": "radiation-intensity.json"
+		},
+		"electronCaptureIntensity": {
+			"description": "The fraction of EC+B+ decay which goes through the electron-capture branch.  The portions which go through individual electron shells are further broken out in the 'K', 'L', ... properties.",
+			"type": "object",
+			"required": [ "total" ],
+			"additionalProperties": false,
+			"properties": {
+				"total": {
+					"$ref": "radiation-intensity.json"
+				}
+			},
+			"patternProperties": {
+				"^[K-Q]\\+?$": {
+					"$ref": "radiation-intensity.json"
+				}
+			}
+		},
+		"logft": {
+			"description": "The log(ft) value associated with this beta decay, typically used to constrain spin-parity values.",
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		"forbidden": {
+			"description": "Indicates that a transition is forbiden by the noted order: 1=first-forbidden, 1u=first-forbidden-unique, 2=second-forbidden, ...",
+			"type": "string",
+			"pattern": "^[1-9]u?$"
+		},
+		"spectralShape": {
+			"description": "An experimental beta-decay spectral shape.  This is currently supplied by external programs.",
+			"type": "string",
+			"minLength": 1
+		}
+	}
+}

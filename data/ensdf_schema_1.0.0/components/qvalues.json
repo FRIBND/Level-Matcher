@@ -1,0 +1,64 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "qvalues.json",
+	"description": "This schema captures the Q-value and separation-energy data typically found at the top of an Adopted Levels dataset.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"properties": {
+		"decayEnergies": {
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"propertyNames": {
+				"$ref": "decay-modes.json#/properties/common"
+			},
+			"patternProperties": {
+				"^(B-(2?n)?|ECp?|a)$": {
+					"$ref": "#/$defs/qvalue"
+				}
+			}
+		},
+		"separationEnergies": {
+			"type": "object",
+			"minProperties": 1,
+			"additionalProperties": false,
+			"propertyNames": {
+				"$ref": "decay-modes.json#/properties/common"
+			},
+			"patternProperties": {
+				"^2?[np]$": {
+					"$ref": "#/$defs/qvalue"
+				}
+			}
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		}
+	},
+	"$defs": {
+		"qvalue": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"const": "keV"
+				},
+				"source": {
+					"type": "string",
+					"enum": [ "systematics", "theory" ],
+					"description": "The absence of this field means this Q-value is derived from measurements, either in the AME or some other source as indicated by the nsrKeys field.  If the AME derived the Q-value from systematics, then the corresponding 'systematics' flag should be set.  If the Q-value is not taken from data or the AME but from some theoretical calculation instead, 'theory' should be marked."
+				},
+				"nsrKeys": {
+					"$ref": "nsr-keys.json"
+				},
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		}
+	}
+}

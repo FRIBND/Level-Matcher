@@ -1,0 +1,86 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "level-transition-strengths.json",
+	"description": "Reduced transition probabilities up from the ground state.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"patternProperties": {
+		"^E[1-9]$": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{ "$ref": "#/$defs/electric" },
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/electric" }
+								]
+							}
+						}
+					}
+				}
+			]
+		},
+		"^M[1-9]$": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"allOf": [
+				{ "$ref": "#/$defs/magnetic" },
+				{
+					"$ref": "measurements.json",
+					"properties": {
+						"measurements": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"unevaluatedProperties": false,
+								"allOf": [
+									{ "$ref": "measurement.json" },
+									{ "$ref": "#/$defs/magnetic" }
+								]
+							}
+						}
+					}
+				}
+			]
+		}
+	},
+	"$defs": {
+		"electric":{
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"pattern": "^e\\^2b(\\^[2-9])?$"
+				},
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		"magnetic": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"pattern": "^u\\^2_N(b(\\^[2-8])?)?$"
+				},
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		}
+	}
+}

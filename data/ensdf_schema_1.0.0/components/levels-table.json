@@ -1,0 +1,72 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "levels-table.json",
+	"description": "The collection of information necessary to construct the levels table in Nuclear Data Sheets.",
+	"type": "object",
+	"required": [ "levels" ],
+	"properties": {
+		"comments": {
+			"$ref": "table-comments.json"
+		},
+		"leastSquaresComment": {
+			"description": "This field is automatically filled in if/when least-squares fitting is used to determine the level energies in the file.",
+			"type": "string",
+			"minLength": 1
+		},
+		"sequences": {
+			"description": "When a group of related levels is identified, a marker for them can be created and stored here.  A level group might be a rotational band, a sequence of levels that form a multiplet through coupling of nucleons, etc.  The levels which belong to the sequence are indicated by their index in the 'levels' array.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"required": [ "description", "rows" ],
+				"properties": {
+					"description": {
+						"description": "A description of the group of levels.",
+						"type": "string",
+						"minLength": 1
+					},
+					"isBand": {
+						"description": "Whether this is a rotational/vibrational band.",
+						"type": "boolean",
+						"const": true
+					},
+					"rows": {
+						"description": "Which rows of the level table belong to this sequence of levels.",
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"type": "integer",
+							"minimum": 0
+						}
+					}
+				}
+			}
+		},
+		"levelOffsets": {
+			"description": "Used to provide additional information for floating levels.  For example, levels given relative to SN should include an entry specifying the value of SN used in the evaluation.  Groups of floating levels where a limit or approximate value can be provided should give that information here, e.g. X+26 keV, where X<20.  ",
+			"type": "object",
+			"additionalProperties": false,
+			"minProperties": 1,
+			"patternProperties": {
+				"^([A-Z]|S[NP])$": {
+					"type": "object",
+					"unevaluatedProperties": false,
+					"$ref": "quantity.json",
+					"required": [ "unit" ],
+					"properties": {
+						"unit": {
+							"type": "string",
+							"const": "keV"
+						}
+					}
+				}
+			}
+		},
+		"levels": {
+			"description": "Level objects are held in this array.  However, many schema customize the levels for their particular dataset, and so the actual format for the levels is specified in-place.",
+			"type": "array",
+			"minItems": 1
+		}
+	}
+}

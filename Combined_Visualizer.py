@@ -39,6 +39,7 @@ import numpy as np
 import json
 import os
 import re
+import argparse
 
 # Import the inference dataset list from the single source of truth (Level_Matcher.py user configuration)
 from Level_Matcher import inference_dataset_labels
@@ -103,11 +104,21 @@ def spread_text_positions(values, minimum_distance):
 # LEVEL SCHEME VISUALIZER (INPUT DATA)
 # ============================================================================
 
-def load_dataset(dataset_code):
+def load_dataset(dataset_code, json_directory='data/json'):
     """Load level data and gamma table from JSON file for a given dataset code."""
-    filename = f"data/json/test_dataset_{dataset_code}.json"
+    # Detect prefix from any existing JSON file in the directory to infer the nucleus/target name.
+    candidate_files = [f for f in os.listdir(json_directory) if f.endswith('.json')] if os.path.isdir(json_directory) else []
+    file_prefix = None
+    if candidate_files:
+        first_file = candidate_files[0]
+        parts = first_file.replace('.json', '').split('_dataset_')
+        file_prefix = parts[0] if parts else None
+    if file_prefix is None:
+        file_prefix = "test"  # fallback to legacy naming
+    file_label = f"{dataset_code}_lowercase" if dataset_code.islower() else dataset_code
+    filename = os.path.join(json_directory, f"{file_prefix}_dataset_{file_label}.json")
     if not os.path.exists(filename):
-        filename = f"data/raw/test_dataset_{dataset_code}.json"
+        filename = os.path.join(json_directory.replace(json_directory, 'data/raw'), f"{file_prefix}_dataset_{file_label}.json") if json_directory != 'data/json' else f"data/raw/{file_prefix}_dataset_{file_label}.json"
     if not os.path.exists(filename):
         return [], []
     
@@ -121,7 +132,7 @@ def load_dataset(dataset_code):
             return data, []
     return [], []
 
-def plot_level_schemes():
+def plot_level_schemes(datasets=None, json_directory='data/json', output_file='outputs/figures/Input_Level_Scheme.png'):
     """Render inference datasets on one shared energy axis: level bars and gamma arrows only.
 
     Bars and arrows are drawn to the true energy scale with no per-level text labels,
@@ -129,8 +140,8 @@ def plot_level_schemes():
     list is imported from Level_Matcher.py so this visualizer always renders exactly
     the datasets that were selected for inference.
     """
-    datasets = inference_dataset_labels
-    dataset_contents = {code: load_dataset(code) for code in datasets}
+    datasets = datasets or inference_dataset_labels
+    dataset_contents = {code: load_dataset(code, json_directory) for code in datasets}
 
     figure_width = 4.0 + len(datasets) * level_scheme_column_spacing
     figure, axis = plt.subplots(figsize=(figure_width, level_scheme_figure_height_inches))
@@ -204,7 +215,6 @@ def plot_level_schemes():
     axis.set_title("Input Level Schemes", fontsize=Font_Config['title'], fontweight='bold', pad=20, family='Times New Roman')
 
     plt.tight_layout()
-    output_file = 'outputs/figures/Input_Level_Scheme.png'
     plt.savefig(output_file, dpi=300)
     print(f"[INFO] Level scheme visualization saved to {output_file}")
     plt.close()
@@ -345,11 +355,20 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
 # ============================================================================
 
 if __name__ == "__main__":
+    argument_parser = argparse.ArgumentParser(description="Render level scheme and clustering figures.")
+    argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to draw (default: inference_dataset_labels)")
+    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with test_dataset_{letter}.json files")
+    argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
+    command_line_arguments = argument_parser.parse_args()
+    figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')
+    os.makedirs(figure_directory, exist_ok=True)
+
     print("Combined Visualizer: generating plots...")
-    plot_level_schemes()
+    plot_level_schemes(command_line_arguments.labels, command_line_arguments.json_dir,
+                       os.path.join(figure_directory, 'Input_Level_Scheme.png'))
     plot_clustering_results(
-        input_path='outputs/clustering/Output_Clustering_Results_XGBoost.txt',
-        output_path='outputs/figures/Output_Cluster_Scheme_XGBoost.png',
+        input_path=os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt'),
+        output_path=os.path.join(figure_directory, 'Output_Cluster_Scheme_XGBoost.png'),
         title_suffix='(XGBoost / Energy-Dominant)'
     )
     print("All visualizations complete.")

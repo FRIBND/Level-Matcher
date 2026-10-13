@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "decay-normalization.json",
+	"description": "This schema describes the normalization factors that can apply to the intensities of the various types of radiation described in ENSDF.  It allows conversion from relative intensities to absolute intensity per 100 decays or per 100 neutron captures.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"$ref": "quantity.json",
+	"properties": {
+		"includesBranchingRatio": {
+			"type": "boolean",
+			"const": true
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		}
+	}
+}
+

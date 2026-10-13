@@ -1,0 +1,82 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "transition-matrix-elements.json",
+	"description": "This schema describes the structure for elecromagnetic matrix elements from a given initial state to the state to which this array is attached.  In keeping with the convention that Coulomb-excitation matrix elements be given in the 'upward' direction, the 'initialState' index in each array element should be less than or equal to the index of the level to which this array is attached.",
+	"type": "array",
+	"minItems": 1,
+	"items": {
+		"type": "object",
+		"unevaluatedProperties": false,
+		"allOf": [
+			{
+				"$ref": "#/$defs/matrixElement",
+				"required": [ "initialState" ],
+				"properties": {
+					"initialState": {
+						"type": "integer",
+						"minimum": 0
+					}
+				}
+			},
+			{
+				"$ref": "measurements.json",
+				"properties": {
+					"measurements": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"unevaluatedProperties": false,
+							"allOf": [
+								{ "$ref": "measurement.json" },
+								{ "$ref": "#/$defs/matrixElement" }
+							]
+						}
+					}
+				}
+			}
+		]
+	},
+	"$defs": {
+		"matrixElement": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [
+				"multipolarity",
+				"unit"
+			],
+			"properties": {
+				"multipolarity": {
+					"type": "string",
+					"pattern": "^[EM][1-9]$"
+				},
+				"unit": {
+					"type": "string"
+				}
+			},
+			"if": {
+				"properties": {
+					"multipolarity": {
+						"type": "string",
+						"pattern": "E"
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"unit": {
+						"type": "string",
+						"pattern": "^eb(\\^([234]|(\\{[13579]/2\\})))?$"
+					}
+				}
+			},
+			"else": {
+				"properties": {
+					"unit": {
+						"type": "string",
+						"pattern": "^u_N(b(\\^([234]|(\\{[1357]/2\\})))?)?$"
+					}
+				}
+			}
+		}
+	}
+}

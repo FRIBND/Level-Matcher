@@ -1,0 +1,44 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "betas-table.json",
+	"type": "object",
+	"description": "The collection of information necessary to construct the betas table in Nuclear Data Sheets.",
+	"required": [ "betas" ],
+	"additionalProperties": false,
+	"properties": {
+		"betas": {
+			"description": "Beta objects are held in this array.  Note that, unlike many of the other radiation types, unplaced betas are not allowed.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"$ref": "beta.json"
+			}
+		},
+		"comments": {
+			"type": "array",
+			"$ref": "table-comments.json",
+			"items": {
+				"type": "object",
+				"properties": {
+					"columns": {
+						"type": "object",
+						"propertyNames": {
+							"enum": [
+								"energy",
+								"intensity",
+								"betaIntensity",
+								"electronCaptureIntensity",
+								"transitionIntensity",
+								"logft"
+							]
+						}
+					}
+				}
+			}
+		},
+		"normalization": {
+			"description": "The normalization factor for beta intensities.",
+			"$ref": "decay-normalization.json"
+		}
+	}
+}

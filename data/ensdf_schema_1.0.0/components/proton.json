@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "proton.json",
+	"description": "This schema describes the protons emitted by prompt-proton emitters in proton-decay datasets.",
+	"type": "object",
+	"$ref": "radiation.json",
+	"required": [ "energy" ],
+	"unevaluatedProperties": false,
+	"properties": {
+		"angularMomentumTransfer": {
+			"$ref": "angular-momentum-transfer.json"
+		}
+	}
+}

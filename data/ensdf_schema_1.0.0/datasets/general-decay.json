@@ -1,0 +1,124 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "general-decay.json",
+	"description": "This schema describes the decay datasets which do not fit one of the more specific types of decay datasets in ENSDF.  A typical example would be spontaneous-fission or isomer decay.  In addition to information regarding the parent and decay mode, these datasets feature only levels and/or gammas.",
+    "type": "object",
+	"required": [ "header", "parent", "decayMode" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"if": {
+		"properties": {
+			"decayMode": {
+				"type": "string",
+				"enum": [ "f", "IT" ]
+			}
+		}
+	},
+	"then": {
+		"properties": {
+			"parent": {
+				"not": {
+					"type": "object",
+					"required": [ "qValue" ]
+				}
+			}
+		}
+	},
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "generalDecay"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"parent": {
+			"$ref": "decay-parent.json"
+		},
+		"decayMode": {
+			"anyOf": [
+				{ "$ref": "decay-modes.json#/properties/common" },
+				{ "$ref": "decay-modes.json#/properties/cluster" },
+				{ "$ref": "decay-modes.json#/properties/isomer" },
+				{ "$ref": "decay-modes.json#/properties/doubleBeta" },
+				{ "$ref": "decay-modes.json#/properties/isomer" }
+			]
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json"
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		}
+	}
+}

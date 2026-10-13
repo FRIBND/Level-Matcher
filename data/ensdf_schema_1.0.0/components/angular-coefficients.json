@@ -1,0 +1,35 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "angular-coefficients.json",
+	"description": "The coefficients for the Legendre polynomial expansion used to describe gamma-ray angular distributions.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"patternProperties": {
+		"^A[2468]$": {
+			"description": "Angular coefficients are not evaluated.  Therefore, each property in this object is an array of measurements.",
+			"type": "object",
+			"additionalProperties": false,
+			"required": [ "values" ],
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"values": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "quantity.json",
+						"properties": {
+							"nsrKeys": {
+								"$ref": "nsr-keys.json"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

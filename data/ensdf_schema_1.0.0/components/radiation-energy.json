@@ -1,0 +1,46 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "radiation-energy.json",
+	"description": "The archetype for all radiation energies in ENSDF.  It is a quantity and has a unit which must be 'keV.'",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"allOf": [
+		{
+			"$ref": "#/$defs/energy",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		{
+			"$ref": "measurements.json",
+			"properties": {
+				"measurements": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"allOf": [
+							{ "$ref": "measurement.json" },
+							{ "$ref": "#/$defs/energy" }
+						]
+					}
+				}
+			}
+		}
+	],
+	"$defs": {
+		"energy": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"const": "keV"
+				}
+			}
+		}
+	}
+}

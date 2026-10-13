@@ -1,0 +1,46 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "deformation-length.json",
+	"description": "This schema describes the length associated with a given deformation of a nucleus, typically measured in inelastic-scattering experiments.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"allOf": [
+		{
+			"$ref": "#/$defs/length",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				}
+			}
+		},
+		{
+			"$ref": "measurements.json",
+			"properties": {
+				"measurements": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"allOf": [
+							{ "$ref": "measurement.json" },
+							{ "$ref": "#/$defs/length" }
+						]
+					}
+				}
+			}
+		}
+	],
+	"$defs": {
+		"length": {
+			"type": "object",
+			"$ref": "quantity.json",
+			"required": [ "unit" ],
+			"properties": {
+				"unit": {
+					"type": "string",
+					"const": "fm"
+				}
+			}
+		}
+	}
+}

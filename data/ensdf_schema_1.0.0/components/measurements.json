@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "measurements.json",
+	"description": "This is a partial specification of a measurements field, which defines common properties.  Each individual quantity will have its own additional properties specified in-place.",
+	"type": "object",
+	"dependentRequired": {
+		"evaluationMethod": [ "measurements" ],
+		"evaluationComment": [ "measurements" ]
+	},
+	"properties": {
+		"evaluationMethod": {
+			"description": "This field describes how an evaluator arrived at the value adopted for a given quantity.  It will typically be something like 'weightedAverage' or 'bestMeasurement' and ought to be filled in by automated tooling.",
+			"type": "string"
+		},
+		"evaluationComment": {
+			"description": "Each measurement in measuredValues is marked 'included' or not, and may include a comment.  Based on this information, a comment documenting this information will be automatically generated and stored here.",
+			"type": "string"
+		},
+		"measurements": {
+			"description": "Evaluated properties will combine the measurement.json schema and any properties they define for themselves and then specify that combination here.",
+			"type": "array",
+			"minItems": 1
+		}
+	}
+}

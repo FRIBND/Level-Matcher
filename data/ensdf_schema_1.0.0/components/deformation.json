@@ -1,0 +1,28 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "deformation.json",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"description": "Deformation parameters for axially symmetric nuclei.",
+	"patternProperties": {
+		"^B[2-9]$": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "quantity.json",
+			"properties": {
+				"comments": {
+					"$ref": "basic-comments.json"
+				},
+				"nsrKeys": {
+					"$ref": "nsr-keys.json"
+				},
+				"isAbsoluteValue": {
+					"type": "boolean",
+					"const": true
+				}
+			}
+		}
+	}
+}
+

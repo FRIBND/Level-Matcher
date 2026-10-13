@@ -1,0 +1,90 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "decay-branching-ratios.json",
+	"description": "This schema describes the branching ratios for the various decay modes which may be assigned to a given level.  Caution: always check whether 'isUnobserved' is present in a decay mode object before using it.  This flag indicates that the decay mode is allowed and perhaps even predicted to occur, but has not been observed.  Such modes are indicated in the data sheets with a '?' symbol rather than a numerical quantity.",
+	"type": "object",
+	"minProperties": 1,
+	"additionalProperties": false,
+	"propertyNames": {
+		"anyOf": [
+			{ "$ref": "decay-modes.json#/properties/common" },
+			{ "$ref": "decay-modes.json#/properties/cluster" },
+			{ "$ref": "decay-modes.json#/properties/isomer" },
+			{ "$ref": "decay-modes.json#/properties/doubleBeta" }
+		]
+	},
+	"patternProperties": {
+		".+": {
+			"anyOf": [
+				{
+					"description": "This schema specifies that a decay might occr but has not been observed.",
+					"type": "object",
+					"unevaluatedProperties": false,
+					"$ref": "quantity.json",
+					"properties": {
+						"isUnobserved": {
+							"type": "boolean",
+							"const": true
+						},
+						"value": {
+							"type": "number",
+							"const": 0
+						},
+						"uncertainty": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"const": "limit"
+								},
+								"limitType": {
+									"type": "string",
+									"const": "lower"
+								},
+								"isInclusive": {
+									"type": "boolean",
+									"const": true
+								}
+							}
+						},
+						"comments": {
+							"$ref": "basic-comments.json"
+						}
+					}
+				},
+				{
+					"description": "This schema describes decays that have been positively identified.",
+					"type": "object",
+					"unevaluatedProperties": false,
+					"allOf": [
+						{
+							"$ref": "quantity.json",
+							"properties": {
+								"comments": {
+									"$ref": "basic-comments.json"
+								}
+							}
+						},
+						{
+							"type": "object",
+							"$ref": "measurements.json",
+							"properties": {
+								"measurements": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"unevaluatedProperties": false ,
+										"allOf": [
+											{ "$ref": "measurement.json" },
+											{ "$ref": "quantity.json" }
+										]
+									}
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	}
+}

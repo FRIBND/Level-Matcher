@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "resonance-energy.json",
+	"description": "For describing energy of unbound resonances in terms of the component particles, e.g. 9C+p.",
+	"type": "object",
+	"unevaluatedProperties": false,
+	"$ref": "quantity.json",
+	"required": [ "unit", "referenceSystem" ],
+	"properties": {
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"unit": {
+			"type": "string",
+			"enum": [ "eV", "keV", "MeV" ]
+		},
+		"referenceSystem": {
+			"type": "string"
+		}
+	}
+}

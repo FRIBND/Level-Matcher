@@ -235,7 +235,7 @@ Scoring_Config = {
     }
 }
 
-def parse_json_datasets(dataset_codes):
+def parse_json_datasets(dataset_codes, json_directory=None):
     """
     Parses JSON files (modern schema) for the given dataset codes and returns a list of standardized level dictionaries.
     Input files: test_dataset_{code}.json
@@ -262,14 +262,27 @@ def parse_json_datasets(dataset_codes):
     # Primary location is data/json/ because Dataset_Parser now writes standardized
     # datasets there. Fall back to data/raw/ to preserve compatibility with older
     # example repositories and pre-existing test fixtures.
+    # A user-supplied json_directory (graphical interface workspace) takes precedence over the defaults.
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    preferred_data_dir = os.path.join(base_dir, 'data', 'json')
+    preferred_data_dir = json_directory if json_directory else os.path.join(base_dir, 'data', 'json')
     fallback_data_dir = os.path.join(base_dir, 'data', 'raw')
     
+    # Detect the prefix from any existing JSON file to infer the nucleus/target name (e.g., 'S34' from 'S34_dataset_L.json')
+    candidate_files = [f for f in os.listdir(preferred_data_dir) if f.endswith('.json')] if os.path.isdir(preferred_data_dir) else []
+    file_prefix = None
+    if candidate_files:
+        first_file = candidate_files[0]
+        parts = first_file.replace('.json', '').split('_dataset_')
+        file_prefix = parts[0] if parts else None
+    if file_prefix is None:
+        file_prefix = "test"  # fallback to legacy naming if no files found
+
     for dataset_code in dataset_codes:
-        filename = os.path.join(preferred_data_dir, f"test_dataset_{dataset_code}.json")
+        # Lowercase letters use a '_lowercase' suffix to avoid case collisions on case-insensitive filesystems.
+        file_label = f"{dataset_code}_lowercase" if dataset_code.islower() else dataset_code
+        filename = os.path.join(preferred_data_dir, f"{file_prefix}_dataset_{file_label}.json")
         if not os.path.exists(filename):
-            filename = os.path.join(fallback_data_dir, f"test_dataset_{dataset_code}.json")
+            filename = os.path.join(fallback_data_dir, f"{file_prefix}_dataset_{file_label}.json")
 
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:

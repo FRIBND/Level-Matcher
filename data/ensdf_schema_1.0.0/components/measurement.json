@@ -1,0 +1,24 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "measurement.json",
+	"description": "This is a partial specification of an object to be used when documenting the data sources for an evaluated value.  The remaining portions of the data will be specified in-place in different schemata in order to ensure consistency in the data.",
+	"type": "object",
+	"required": [ "nsrKeys" ],
+	"properties": {
+		"nsrKeys": {
+			"description": "The NSR keys associated with a measurement.",
+			"$ref": "nsr-keys.json"
+		},
+		"isIncluded": {
+			"description": "Indicates whether this value is included in, for example, a weighted average.",
+			"type": "boolean",
+			"const": true
+		},
+		"comment": {
+			"description": "This should be at most a short note, not a detailed discussion.  It will appear inline in the documentation for the quantity being evaluated.",
+			"examples": [ "Superseded by 2014Mu01." ],
+			"type": "string",
+			"minLength": 1
+		}
+	}
+}

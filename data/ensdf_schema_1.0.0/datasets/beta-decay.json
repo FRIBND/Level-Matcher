@@ -1,0 +1,149 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "beta-decay.json",
+	"description": "The schema specifying the format for beta-decay datasets.  It includes beta-minus decay, electron-capture decay, and electron-capture/beta-plus decay.  If a level is fed by beta decay, it will include a 'beta' property which is the index of the beta in the betasTable which feeds that level.",
+    "type": "object",
+	"required": [ "header", "parent", "decayMode" ],
+	"anyOf": [
+		{ "required": [ "levelsTable" ] },
+		{ "required": [ "gammasTable" ] }
+	],
+	"additionalProperties": false,
+	"properties": {
+		"header": {
+			"type": "object",
+			"$ref": "evaluation-header.json",
+			"properties": {
+				"documentType": {
+					"const": "betaDecay"
+				},
+				"database": {
+					"enum": [ "ENSDF", "XUNDL" ]
+				},
+				"schemaVersion": {
+					"type": "string",
+					"const": "1.0.0"
+				}
+			},
+			"if": {
+				"properties": {
+					"database": {
+						"const": "XUNDL"
+					}
+				}
+			},
+			"then": {
+				"not": {
+					"type": "object",
+					"required": [ "history" ]
+				}
+			},
+			"else": {
+				"type": "object",
+				"required": [ "history" ]
+			}
+		},
+		"parent": {
+			"type": "object",
+			"$ref": "decay-parent.json",
+			"required": [ "qValue" ]
+		},
+		"decayMode": {
+			"type": "string",
+			"$ref": "decay-modes.json#/properties/common",
+			"pattern": "^(B[+-]|EC(\\+B\\+)?)$"
+		},
+		"comments": {
+			"$ref": "basic-comments.json"
+		},
+		"tables": {
+			"$ref": "unformatted-tables.json"
+		},
+		"references": {
+			"$ref": "references.json"
+		},
+		"levelsTable": {
+			"type": "object",
+			"unevaluatedProperties": false,
+			"$ref": "levels-table.json",
+			"required": [ "levels" ],
+			"properties": {
+				"levels": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"$ref": "level.json",
+						"properties": {
+							"beta": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					}
+				},
+				"comments": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"columns": {
+								"type": "object",
+								"propertyNames": {
+									"enum": [
+										"energy",
+										"spinParity",
+										"halfLife"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"gammasTable": {
+			"$ref": "gammas-table.json"
+		},
+		"betasTable": {
+			"$ref": "betas-table.json"
+		},
+		"unresolvedFeeding": {
+			"description": "This is intended to store information about feeding to highly excited states fed in beta-decay, typically measured in total-absorption spectroscopy (TAS).  The data model mimics a histogram, with each array element specifying its upper and lower energy range as well as the measured intensity within that range.  The model is intentionally agnostic regarding the definition of histogram bins; variable width is supported, and technically bins may overlap or be non-adjacent.  Users are advised that (a) they should carefully inspect the data to ensure it conforms to their expectations, and (b) this format could change in the future, as TAS is relatively new and poorly supported in the original ENSDF format.",
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"unevaluatedProperties": false,
+				"required": [ "intensity", "energyRange" ],
+				"properties": {
+					"intensity": {
+						"$ref": "quantity.json"
+					},
+					"energyRange": {
+						"type": "object",
+						"unevaluatedProperties": false,
+						"required": [ "lowerLimit", "upperLimit" ],
+						"properties": {
+							"lowerLimit": {
+								"$ref": "radiation-energy.json",
+								"not": {
+									"type": "object",
+									"required": [ "measurements" ]
+								}
+							},
+							"upperLimit": {
+								"$ref": "radiation-energy.json",
+								"not": {
+									"type": "object",
+									"required": [ "measurements" ]
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
