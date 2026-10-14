@@ -18,7 +18,7 @@ Workflow Diagram:
   Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{prefix}_dataset_{letter}.json]
             |
             v
-  [Dataset list: letter, reaction, source file]  <-- parsed from the parser log
+  [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
             |
             v
   [User selects two or more datasets] --> [Run Matching]
@@ -39,7 +39,8 @@ Numbered Technical Steps:
 5. Results: reports and figures are written to <workspace parent>/outputs.
 
 Architecture:
-- `Level_Matcher_Interface`: Tkinter window class holding all widgets and state.
+- `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
+  for the entry, dataset table rows and log; icon from assets/frib_logo.png when present).
 - `browse_workspace`: Folder chooser; triggers the scan.
 - `scan_workspace`: Starts the parser subprocess and populates the dataset list.
 - `run_matching`: Starts the matcher and visualizer subprocesses in sequence.
@@ -63,34 +64,55 @@ class Level_Matcher_Interface:
     def __init__(self, root_window):
         self.root_window = root_window
         root_window.title("Level Matcher")
-        root_window.geometry("900x700")
-        root_window.minsize(700, 500)
+        root_window.geometry("900x720")
+        root_window.minsize(700, 520)
 
-        # Every widget uses the named Tk fonts, so one monospaced family (first installed) covers the whole window
+        # Menus, labels, buttons and table headings use Arial; text inside boxes (entry, table rows, log) uses one monospaced family
         installed_fonts = set(tkfont.families())
+        menu_family = next((name for name in ("Arial", "Liberation Sans", "Helvetica") if name in installed_fonts), "Helvetica")
         monospace_family = next((name for name in ("JetBrains Mono SemiBold", "JetBrains Mono", "JuliaMono", "Fira Code", "Consolas", "Courier New")
                                  if name in installed_fonts), "Courier")
-        for named_font in ("TkDefaultFont", "TkTextFont", "TkFixedFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont"):
-            tkfont.nametofont(named_font).configure(family=monospace_family, size=10)
+        for named_font in ("TkDefaultFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont", "TkTextFont", "TkTooltipFont"):
+            tkfont.nametofont(named_font).configure(family=menu_family, size=10)
+        tkfont.nametofont("TkFixedFont").configure(family=monospace_family, size=10)
+        self.monospace_font = tkfont.Font(family=monospace_family, size=10)
+        table_style = ttk.Style()
+        table_style.configure("Treeview", font=self.monospace_font, rowheight=self.monospace_font.metrics("linespace") + 6)
+        table_style.configure("Treeview.Heading", font=(menu_family, 10, "bold"))
+
+        # Window icon: assets/frib_logo.png if present, otherwise a transparent icon (no default feather)
+        icon_path = os.path.join(project_directory, "assets", "frib_logo.png")
+        self.icon_image = tk.PhotoImage(file=icon_path) if os.path.isfile(icon_path) else tk.PhotoImage(width=16, height=16)
+        root_window.iconphoto(True, self.icon_image)
 
         self.log_queue = queue.Queue()
         self.is_busy = False
         self.dataset_records = []  # One dictionary per detected dataset: letter, filename, reaction
 
+        # 0. Header (the operating system draws the title bar, so the app name is repeated here in Arial)
+        ttk.Label(root_window, text="Level Matcher", font=(menu_family, 16, "bold")).pack(anchor="w", padx=12, pady=(10, 0))
+
         # 1. Workspace selection row
         workspace_frame = ttk.LabelFrame(root_window, text="1. Workspace folder (contains .ens files including the adopted file)")
         workspace_frame.pack(fill="x", padx=10, pady=(10, 5))
         self.workspace_variable = tk.StringVar()
-        ttk.Entry(workspace_frame, textvariable=self.workspace_variable).pack(side="left", fill="x", expand=True, padx=5, pady=5)
+        ttk.Entry(workspace_frame, textvariable=self.workspace_variable, font=self.monospace_font).pack(side="left", fill="x", expand=True, padx=5, pady=5)
         ttk.Button(workspace_frame, text="Browse...", command=self.browse_workspace).pack(side="left", padx=5, pady=5)
 
-        # 2. Dataset selection list
+        # 2. Dataset selection table: Letter | XREF reaction | data file
         dataset_frame = ttk.LabelFrame(root_window, text="2. Select datasets to match (Ctrl or Shift for multiple)")
         dataset_frame.pack(fill="both", padx=10, pady=5)
-        self.dataset_listbox = tk.Listbox(dataset_frame, selectmode="extended", height=12, exportselection=False)
-        dataset_scrollbar = ttk.Scrollbar(dataset_frame, orient="vertical", command=self.dataset_listbox.yview)
-        self.dataset_listbox.configure(yscrollcommand=dataset_scrollbar.set)
-        self.dataset_listbox.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
+        self.dataset_table = ttk.Treeview(dataset_frame, columns=("letter", "reaction", "filename"), show="headings",
+                                          selectmode="extended", height=10)
+        self.dataset_table.heading("letter", text="Letter", anchor="w")
+        self.dataset_table.heading("reaction", text="XREF", anchor="w")
+        self.dataset_table.heading("filename", text="ENSDF data file", anchor="w")
+        self.dataset_table.column("letter", width=70, stretch=False, anchor="w")
+        self.dataset_table.column("reaction", width=300, stretch=False, anchor="w")
+        self.dataset_table.column("filename", width=420, stretch=True, anchor="w")
+        dataset_scrollbar = ttk.Scrollbar(dataset_frame, orient="vertical", command=self.dataset_table.yview)
+        self.dataset_table.configure(yscrollcommand=dataset_scrollbar.set)
+        self.dataset_table.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         dataset_scrollbar.pack(side="left", fill="y", pady=5, padx=(0, 5))
 
         # 3. Action buttons
@@ -104,7 +126,7 @@ class Level_Matcher_Interface:
         # 4. Log panel
         log_frame = ttk.LabelFrame(root_window, text="Log")
         log_frame.pack(fill="both", expand=True, padx=10, pady=(5, 10))
-        self.log_text = tk.Text(log_frame, wrap="none", state="disabled")
+        self.log_text = tk.Text(log_frame, wrap="none", state="disabled", font=self.monospace_font)
         log_scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=log_scrollbar.set)
         self.log_text.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
@@ -195,7 +217,7 @@ class Level_Matcher_Interface:
         if workspace_path is None:
             return
         self.dataset_records = []
-        self.dataset_listbox.delete(0, "end")
+        self.dataset_table.delete(*self.dataset_table.get_children())
         # The adopted dataset file begins with the XREF (X records) letter list; fall back to XREF.txt.
         adopted_files = sorted(name for name in os.listdir(workspace_path) if "adopted" in name.lower() and name.endswith(".ens"))
         xref_path = os.path.join(workspace_path, adopted_files[0] if adopted_files else "XREF.txt")
@@ -207,8 +229,7 @@ class Level_Matcher_Interface:
 
         def finish_scan(succeeded):
             for record in sorted(self.dataset_records, key=lambda item: item["letter"]):
-                self.dataset_listbox.insert(
-                    "end", f"{record['letter']}  |  {record['reaction']}  |  {record['filename']}")
+                self.dataset_table.insert("", "end", values=(record["letter"], record["reaction"], record["filename"]))
             if not succeeded:
                 self.status_variable.set("Scan failed. See log.")
             elif not self.dataset_records:
@@ -222,9 +243,7 @@ class Level_Matcher_Interface:
         workspace_path = self.get_workspace()
         if workspace_path is None:
             return
-        selected_letters = []
-        for index in self.dataset_listbox.curselection():
-            selected_letters.append(self.dataset_listbox.get(index).split("|")[0].strip())
+        selected_letters = [self.dataset_table.item(row_identifier, "values")[0] for row_identifier in self.dataset_table.selection()]
         if len(selected_letters) < 2:
             messagebox.showerror("Datasets", "Select at least two datasets to match.")
             return

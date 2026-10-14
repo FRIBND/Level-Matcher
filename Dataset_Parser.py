@@ -52,7 +52,7 @@ Workflow Diagram:
 # 1. Output folder: create it if missing and delete every existing file in it, so stale JSON never survives a run.
 # 2. XREF: read the X records (col 8 = 'X', col 9 = case-sensitive dataset letter, col 10+ = reaction) into a letter -> reaction map.
 # 3. Dataset letter: match the first-line reaction text (cols 10-39, e.g. "{+33}S(P,G)") to an XREF reaction after removing
-#    markup and uppercasing ("{+33}S" -> "33S"). No match: use the letter in *_test_{letter}.ens, else skip the file.
+#    markup and uppercasing ("{+33}S" -> "33S"). No match: use the letter in *_test_{letter}.ens, else skip the file. Adopted files are skipped with a note.
 # 4. Records used: only L records (levels) and G records (gammas) are converted; comments, continuation records, headers and
 #    all other record types are ignored. G records before the first L record are ignored. The identification record and the
 #    first general comment are read only to obtain the reaction and the target ground-state spin-parity.
@@ -845,6 +845,11 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         dsid = ""
         if lines and len(lines[0]) > 9:
             dsid = lines[0][9:39].strip()
+
+        # The Adopted file only supplies the XREF letters; it is not used for level matching.
+        if dsid.upper().startswith("ADOPTED"):
+            print(f"Note: '{ens_filename}' is the Adopted file (XREF source). Skipping.")
+            continue
 
         # 2. Match DSID to XREF letter.
         # Primary path: normalize the DSID extracted from the identification record and look
