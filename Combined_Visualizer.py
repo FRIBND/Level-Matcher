@@ -212,7 +212,7 @@ def plot_level_schemes(datasets=None, json_directory='data/json', output_file='o
     axis.tick_params(axis='x', length=0)
     axis.tick_params(axis='y', labelsize=Font_Config['tick_labels'])
     for tick_label in axis.get_yticklabels():
-        tick_label.set_family('Times New Roman')
+        tick_label.set_fontfamily('Times New Roman')
 
     axis.set_title("Input Level Schemes", fontsize=Font_Config['title'], fontweight='bold', pad=20, family='Times New Roman')
 
@@ -339,7 +339,7 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
     axis.spines['left'].set_visible(False)
     axis.tick_params(left=True, bottom=False, labelsize=Font_Config['cluster_tick_labels'])
     for tick_label in axis.get_yticklabels():
-        tick_label.set_family('Times New Roman')
+        tick_label.set_fontfamily('Times New Roman')
 
     full_title = "Clustering Results"
     if title_suffix:

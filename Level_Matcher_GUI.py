@@ -21,7 +21,7 @@ Workflow Diagram:
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
             |
             v
-  [User selects two or more datasets] --> [Run Matching]
+  [User selects two or more datasets] --> [Run Level Matcher]
             |
             v
   Level_Matcher.py --> Combined_Visualizer.py (subprocesses) --> [<workspace parent>/outputs/]
@@ -31,6 +31,7 @@ Workflow Diagram:
 
 Numbered Technical Steps:
 1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
+   The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
 2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside the json folder beside the workspace
    (created if missing, existing files deleted first); the parser log
    builds the dataset list.
@@ -40,14 +41,17 @@ Numbered Technical Steps:
 
 Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
-  for the entry, dataset table rows and log; icon from assets/frib_logo.png when present).
+  for the entry, dataset table rows and log; DPI aware, so pixel sizes follow the Windows display scale). Layout top to bottom:
+  workspace row, dataset table, action bar (Select All, Clear Selection | Run Level Matcher), log, footer (status text | small FRIB logo).
+  The title bar shows text only (transparent assets/blank_icon.ico).
 - `browse_workspace`: Folder chooser; triggers the scan.
 - `scan_workspace`: Starts the parser subprocess and populates the dataset list.
-- `run_matching`: Starts the matcher and visualizer subprocesses in sequence.
+- `run_matcher`: Starts the matcher and visualizer subprocesses in sequence.
 - `start_subprocess_sequence`: Runs commands in a worker thread and pushes output lines to a queue.
 - `poll_log_queue`: Main-thread timer that moves queued lines into the log widget.
 """
 
+import json
 import os
 import queue
 import re
@@ -64,8 +68,12 @@ class Level_Matcher_Interface:
     def __init__(self, root_window):
         self.root_window = root_window
         root_window.title("Level Matcher")
-        root_window.geometry("900x720")
-        root_window.minsize(700, 520)
+        # Pixel sizes are multiplied by the display scale (1.0 at 96 dpi, 2.0 on a 200% display)
+        display_scale = root_window.winfo_fpixels("1i") / 96
+        window_width = min(int(900 * display_scale), root_window.winfo_screenwidth() - 40)
+        window_height = min(int(720 * display_scale), root_window.winfo_screenheight() - 100)
+        root_window.geometry(f"{window_width}x{window_height}")
+        root_window.minsize(int(700 * display_scale), int(520 * display_scale))
 
         # Menus, labels, buttons and table headings use Arial; text inside boxes (entry, table rows, log) uses one monospaced family
         installed_fonts = set(tkfont.families())
@@ -80,17 +88,35 @@ class Level_Matcher_Interface:
         table_style.configure("Treeview", font=self.monospace_font, rowheight=self.monospace_font.metrics("linespace") + 6)
         table_style.configure("Treeview.Heading", font=(menu_family, 10, "bold"))
 
-        # Window icon: assets/frib_logo.png if present, otherwise a transparent icon (no default feather)
-        icon_path = os.path.join(project_directory, "assets", "frib_logo.png")
-        self.icon_image = tk.PhotoImage(file=icon_path) if os.path.isfile(icon_path) else tk.PhotoImage(width=16, height=16)
-        root_window.iconphoto(True, self.icon_image)
+        # Title bar shows text only: a transparent icon replaces the default Tk feather
+        blank_icon_path = os.path.join(project_directory, "assets", "blank_icon.ico")
+        if os.name == "nt" and os.path.isfile(blank_icon_path):
+            root_window.iconbitmap(default=blank_icon_path)
+        logo_png_path = os.path.join(project_directory, "assets", "frib_logo.png")
 
         self.log_queue = queue.Queue()
         self.is_busy = False
         self.dataset_records = []  # One dictionary per detected dataset: letter, filename, reaction
 
-        # 0. Header (the operating system draws the title bar, so the app name is repeated here in Arial)
-        ttk.Label(root_window, text="Level Matcher", font=(menu_family, 16, "bold")).pack(anchor="w", padx=12, pady=(10, 0))
+        # Last used workspace folder is remembered between sessions
+        self.settings_path = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Level_Matcher", "settings.json")
+        try:
+            with open(self.settings_path, "r", encoding="utf-8") as settings_file:
+                last_workspace = json.load(settings_file).get("last_workspace", "")
+        except (OSError, ValueError):
+            last_workspace = ""
+
+        # Footer (packed first so it always stays visible): status text on the left, small FRIB logo on the right
+        ttk.Separator(root_window, orient="horizontal").pack(side="bottom", fill="x")
+        footer_frame = tk.Frame(root_window, background="white")
+        footer_frame.pack(side="bottom", fill="x")
+        self.status_variable = tk.StringVar(value="Browse to a workspace folder containing .ens files.")
+        tk.Label(footer_frame, textvariable=self.status_variable, background="white", anchor="w").pack(side="left", padx=12)
+        if os.path.isfile(logo_png_path):
+            logo_image = tk.PhotoImage(file=logo_png_path)
+            logo_shrink_factor = max(1, round(logo_image.width() / (36 * display_scale)))
+            self.footer_logo = logo_image.subsample(logo_shrink_factor)
+            tk.Label(footer_frame, image=self.footer_logo, background="white").pack(side="right", padx=12, pady=2)
 
         # 1. Workspace selection row
         workspace_frame = ttk.LabelFrame(root_window, text="1. Workspace folder (contains .ens files including the adopted file)")
@@ -101,32 +127,34 @@ class Level_Matcher_Interface:
 
         # 2. Dataset selection table: Letter | XREF reaction | data file
         dataset_frame = ttk.LabelFrame(root_window, text="2. Select datasets to match (Ctrl or Shift for multiple)")
-        dataset_frame.pack(fill="both", padx=10, pady=5)
+        dataset_frame.pack(fill="both", expand=True, padx=10, pady=5)
         self.dataset_table = ttk.Treeview(dataset_frame, columns=("letter", "reaction", "filename"), show="headings",
-                                          selectmode="extended", height=10)
+                                          selectmode="extended", height=8)
         self.dataset_table.heading("letter", text="Letter", anchor="w")
         self.dataset_table.heading("reaction", text="XREF", anchor="w")
         self.dataset_table.heading("filename", text="ENSDF data file", anchor="w")
-        self.dataset_table.column("letter", width=70, stretch=False, anchor="w")
-        self.dataset_table.column("reaction", width=300, stretch=False, anchor="w")
-        self.dataset_table.column("filename", width=420, stretch=True, anchor="w")
+        self.dataset_table.column("letter", width=int(70 * display_scale), stretch=False, anchor="w")
+        self.dataset_table.column("reaction", width=int(300 * display_scale), stretch=False, anchor="w")
+        self.dataset_table.column("filename", width=int(420 * display_scale), stretch=True, anchor="w")
         dataset_scrollbar = ttk.Scrollbar(dataset_frame, orient="vertical", command=self.dataset_table.yview)
         self.dataset_table.configure(yscrollcommand=dataset_scrollbar.set)
         self.dataset_table.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         dataset_scrollbar.pack(side="left", fill="y", pady=5, padx=(0, 5))
 
-        # 3. Action buttons
+        # 3. Action bar: selection helpers on the left, primary action on the right
         action_frame = ttk.Frame(root_window)
-        action_frame.pack(fill="x", padx=10, pady=5)
-        self.run_button = ttk.Button(action_frame, text="Run Matching", command=self.run_matching)
-        self.run_button.pack(side="left", padx=(0, 5))
-        self.status_variable = tk.StringVar(value="Browse to a workspace folder containing .ens files.")
-        ttk.Label(action_frame, textvariable=self.status_variable).pack(side="left", padx=10)
+        action_frame.pack(fill="x", padx=15, pady=5)
+        ttk.Button(action_frame, text="Select All",
+                   command=lambda: self.dataset_table.selection_set(self.dataset_table.get_children())).pack(side="left")
+        ttk.Button(action_frame, text="Clear Selection",
+                   command=lambda: self.dataset_table.selection_remove(self.dataset_table.selection())).pack(side="left", padx=(5, 0))
+        self.run_button = ttk.Button(action_frame, text="Run Level Matcher", command=self.run_matcher)
+        self.run_button.pack(side="right")
 
         # 4. Log panel
         log_frame = ttk.LabelFrame(root_window, text="Log")
         log_frame.pack(fill="both", expand=True, padx=10, pady=(5, 10))
-        self.log_text = tk.Text(log_frame, wrap="none", state="disabled", font=self.monospace_font)
+        self.log_text = tk.Text(log_frame, wrap="word", state="disabled", font=self.monospace_font, height=8)
         log_scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=log_scrollbar.set)
         self.log_text.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
@@ -134,6 +162,10 @@ class Level_Matcher_Interface:
 
         self.poll_log_queue()
 
+        # Reopen the last workspace and rescan it automatically
+        if last_workspace and os.path.isdir(last_workspace):
+            self.workspace_variable.set(last_workspace)
+            root_window.after(300, self.scan_workspace)
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
@@ -156,9 +188,12 @@ class Level_Matcher_Interface:
         return workspace_path
 
     def browse_workspace(self):
-        chosen_folder = filedialog.askdirectory(title="Select workspace folder")
+        chosen_folder = filedialog.askdirectory(title="Select workspace folder", initialdir=self.workspace_variable.get() or None)
         if chosen_folder:
             self.workspace_variable.set(os.path.normpath(chosen_folder))
+            os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
+            with open(self.settings_path, "w", encoding="utf-8") as settings_file:
+                json.dump({"last_workspace": self.workspace_variable.get()}, settings_file)
             self.scan_workspace()
 
     # ------------------------------------------------------------------
@@ -178,6 +213,7 @@ class Level_Matcher_Interface:
                     command, cwd=project_directory, env=environment, stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
                     creationflags=creation_flags)
+                assert process.stdout is not None  # stdout=PIPE above guarantees a stream
                 for output_line in process.stdout:
                     self.log_queue.put(("line", output_line.rstrip()))
                 if process.wait() != 0:
@@ -235,11 +271,11 @@ class Level_Matcher_Interface:
             elif not self.dataset_records:
                 self.status_variable.set("No usable .ens files found in the workspace.")
             else:
-                self.status_variable.set(f"Found {len(self.dataset_records)} datasets. Select two or more, then click Run Matching.")
+                self.status_variable.set(f"Found {len(self.dataset_records)} datasets. Select two or more, then click Run Level Matcher.")
 
         self.start_subprocess_sequence([command], finish_scan)
 
-    def run_matching(self):
+    def run_matcher(self):
         workspace_path = self.get_workspace()
         if workspace_path is None:
             return
@@ -255,7 +291,7 @@ class Level_Matcher_Interface:
             [sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments],
             [sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments],
         ]
-        self.status_variable.set("Running matching (training may take several minutes)...")
+        self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
 
         def finish_run(succeeded):
             self.status_variable.set("Done. Results are in the outputs folder next to the workspace." if succeeded
@@ -265,6 +301,13 @@ class Level_Matcher_Interface:
 
 
 if __name__ == "__main__":
+    # DPI awareness: without it Windows treats the window as 96 dpi, so the title bar text and icon stay tiny on scaled displays
+    if os.name == "nt":
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except (AttributeError, OSError):
+            ctypes.windll.user32.SetProcessDPIAware()
     root_window = tk.Tk()
     Level_Matcher_Interface(root_window)
     root_window.mainloop()
