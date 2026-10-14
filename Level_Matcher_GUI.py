@@ -43,7 +43,7 @@ Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
   for the entry, dataset table rows and log; DPI aware, so pixel sizes follow the Windows display scale). Layout top to bottom:
   workspace row, dataset table, action bar (Select All, Clear Selection | Run Level Matcher), log, footer (status text | small FRIB logo).
-  The title bar shows text only (transparent assets/blank_icon.ico).
+  The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
 - `browse_workspace`: Folder chooser; triggers the scan.
 - `scan_workspace`: Starts the parser subprocess and populates the dataset list.
 - `run_matcher`: Starts the matcher and visualizer subprocesses in sequence.
@@ -88,10 +88,10 @@ class Level_Matcher_Interface:
         table_style.configure("Treeview", font=self.monospace_font, rowheight=self.monospace_font.metrics("linespace") + 6)
         table_style.configure("Treeview.Heading", font=(menu_family, 10, "bold"))
 
-        # Title bar shows text only: a transparent icon replaces the default Tk feather
-        blank_icon_path = os.path.join(project_directory, "assets", "blank_icon.ico")
-        if os.name == "nt" and os.path.isfile(blank_icon_path):
-            root_window.iconbitmap(default=blank_icon_path)
+        # Title bar icon: multi-size FRIB emblem (Windows picks the size matching the display scale)
+        title_icon_path = os.path.join(project_directory, "assets", "frib_logo.ico")
+        if os.name == "nt" and os.path.isfile(title_icon_path):
+            root_window.iconbitmap(default=title_icon_path)
         logo_png_path = os.path.join(project_directory, "assets", "frib_logo.png")
 
         self.log_queue = queue.Queue()
