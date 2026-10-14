@@ -595,12 +595,11 @@ def calculate_gamma_decay_pattern_similarity(gamma_decays_1, gamma_decays_2):
         return Scoring_Config['General']['Neutral_Score']
 
     # =========================================================================
-    # Phase 1: Normalize Intensities (Strongest=100)
+    # Phase 1: Clean Intensities (already normalized by Dataset_Parser: strongest = 100, uncertainties propagated)
     # =========================================================================
     def normalize_gamma_intensities(raw_decays):
         clean_list = []
         has_intensity = False
-        maximum_intensity = 0.0
         
         for gamma in raw_decays:
             energy_value = float(gamma['energy'])
@@ -613,8 +612,6 @@ def calculate_gamma_decay_pattern_similarity(gamma_decays_1, gamma_decays_2):
             
             if intensity_value > 0:
                 has_intensity = True
-                if intensity_value > maximum_intensity:
-                    maximum_intensity = intensity_value
             
             clean_list.append({
                 'energy': energy_value, 
@@ -622,13 +619,6 @@ def calculate_gamma_decay_pattern_similarity(gamma_decays_1, gamma_decays_2):
                 'intensity': intensity_value, 
                 'intensity_uncertainty': intensity_uncertainty
             })
-            
-        # Normalize strongest gamma to 100.0 (scales uncertainties proportionally)
-        if has_intensity and maximum_intensity > 0:
-            scale = 100.0 / maximum_intensity
-            for gamma in clean_list:
-                gamma['intensity'] *= scale
-                gamma['intensity_uncertainty'] *= scale
 
         # Apply minimum uncertainty floor for gammas with no stated DRI (intensity_uncertainty == 0).
         # When DRI is absent from ENSDF, the intensity is measured to some precision that was not
@@ -636,8 +626,9 @@ def calculate_gamma_decay_pattern_similarity(gamma_decays_1, gamma_decays_2):
         # (the calculate_z_score fallback) means Z = |ΔRI| in absolute units, which flags any
         # difference > 3 as a mismatch regardless of the actual measurement precision.
         # Floor: max(5% relative, 1.0 absolute), representing typical ENSDF reporting precision.
+        # The reference gamma (exactly 100) is exempt: its zero uncertainty is exact by definition.
         for gamma in clean_list:
-            if gamma['intensity'] > 0 and gamma['intensity_uncertainty'] == 0:
+            if 0 < gamma['intensity'] < 100.0 and gamma['intensity_uncertainty'] == 0:
                 gamma['intensity_uncertainty'] = max(gamma['intensity'] * 0.05, 1.0)
                 
         return clean_list, has_intensity

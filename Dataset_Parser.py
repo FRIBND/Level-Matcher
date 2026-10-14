@@ -7,61 +7,93 @@ Dataset Parser for Nuclear Level Matcher
 
 Workflow Diagram:
 
-  [data/raw/*.ens files]          [data/raw/XREF.txt]
-         |                               |
-         v                               v
-  [Identification Record]     [ENSDF Markup Normalization]
-  [DSID extraction]           [Letter -> Reaction Map]
-         |                               |
-         +---------------+---------------+
-                         |
-                         v
-              [DSID -> Letter Matching]
-                         |
-              +----------+----------+
-              |                     |
-              v                     v
-       [L Records]            [G Records]
-    [Energy Levels]        [Gamma Transitions]
-              |                     |
-              +----------+----------+
-                         |
-                         v
-          [Fixed-Width Column Slicing]
-          [Spin-Parity Parsing]
-          [Uncertainty Inference]
-                         |
-                         v
-          [Standardized JSON Schema]
-                         |
-                         v
-          [data/json/test_dataset_{X}.json]
+  [--raw_dir/*.ens files]            [--xref: adopted .ens X records or XREF.txt]
+         |                                        |
+         v                                        v
+  [Identification record]               [X records: letter -> reaction map]
+  [dataset identifier, cols 10-39]      [reaction descriptions]
+         |                                        |
+         +------------------+---------------------+
+                            |
+                            v
+               [Identifier -> XREF letter match]
+               (filename fallback: *_test_{letter}.ens)
+                            |
+         +------------------+--------------------+
+         |                                       |
+         v                                       v
+  [First general comment]              [Reaction type from identifier]
+  [target ground-state spin-parity;    [transferred / captured particle spin-parity]
+   default 0+]                                    |
+         |                                        |
+         +------------------+---------------------+
+                            |
+                            v
+         [L records]  -->  [G records after each L record]
+         [energy, uncertainty, spin-parity]   [energy, uncertainty, intensity]
+                            |
+                            v
+         [Blank spin-parity in transfer/capture reactions]
+         --> [angular momentum coupling from L-transfer (cols 56-64)]
+                            |
+                            v
+         [Gamma placement: initial level = parent L record,
+          final level = nearest level to E_level - E_gamma]
+                            |
+                            v
+         [ENSDF JSON Schema 1.0.0: levelsTable + gammasTable]
+                            |
+                            v
+         [output_dir/{prefix}_dataset_{letter}.json]
+         (lowercase letters get a _lowercase suffix to avoid
+          case-insensitive filename collisions)
 
 # Technical Steps:
-# 1. Read XREF.txt to build a letter-to-reaction mapping; strip ENSDF markup for normalized comparison.
-# 2. Scan all .ens files in data/raw/; extract each file's DSID from its identification record (cols 9-38).
-# 3. Match each DSID to its XREF letter using normalized string comparison.
-# 4. Parse L records (energy levels) and G records (gamma transitions) using fixed-width column slicing;
-#    skip continuation/annotation records (e.g., FLAG=H lines) that carry no level data.
-# 5. Extract target nucleus ground state spin-parity and infer unspecified level spin-parities from
-#    orbital angular momentum transfers (L-values) via quantum angular momentum coupling.
-# 6. Missing energy uncertainties: level energies take 50 keV if all excited-state energies in the dataset are whole tens,
-#    5 keV if all are integers, otherwise precision-based; gamma energies take 1 keV (decimal), 5 keV (integer), 50 keV (whole ten).
-# 7. Create the output folder if missing, delete stale files in it, then output one test_dataset_{letter}.json per .ens file into data/json/ strictly complying with ENSDF JSON Schema 1.0.0
-#    (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
+# 1. Output folder: create it if missing and delete every existing file in it, so stale JSON never survives a run.
+# 2. XREF: read the X records (col 8 = 'X', col 9 = case-sensitive dataset letter, col 10+ = reaction) into a letter -> reaction map.
+# 3. Dataset letter: match the first-line reaction text (cols 10-39, e.g. "{+33}S(P,G)") to an XREF reaction after removing
+#    markup and uppercasing ("{+33}S" -> "33S"). No match: use the letter in *_test_{letter}.ens, else skip the file.
+# 4. Records used: only L records (levels) and G records (gammas) are converted; comments, continuation records, headers and
+#    all other record types are ignored. G records before the first L record are ignored. The identification record and the
+#    first general comment are read only to obtain the reaction and the target ground-state spin-parity.
+# 5. Level fields (fixed-width slicing): energy cols 10-19, uncertainty cols 20-21, spin-parity cols 22-39
+#    (half-life is ignored: not used for level matching). Spin-parity strings (lists, ranges, tentative parentheses) become twoTimesSpin/parity
+#    hypotheses; tentative flags are written only when true.
+# 6. Spin-parity inference: when a level has no spin-parity and the reaction is a transfer, capture, inelastic scattering, charge
+#    exchange or resonance reaction, the target spin-parity (first general comment, default 0+) is coupled with the transferred or
+#    captured particle spin-parity (reaction map; several spin options are coupled separately and unioned) using the L-transfer in
+#    cols 56-64. Comma = union of L values, plus = intersection of L values, parentheses = tentative. Without an L value the default
+#    is tentative L = 0..5 (thermal neutron capture: L = 0). Other datasets keep an empty spin-parity for energy-based matching.
+# 7. Missing energy uncertainties (stated numeric uncertainties are always kept, cols 20-21 for levels and gammas; letter
+#    qualifiers such as AP, GE, LT are treated as missing): level energies take
+#    50 keV if all excited-state energies in the dataset are whole tens, 5 keV if all are integers, otherwise precision-based
+#    (ground state = none); gamma energies take 1 keV (decimal), 5 keV (integer), 20 keV (whole ten).
+# 8. Gamma fields: energy cols 10-19, uncertainty cols 20-21, relative intensity cols 22-29, intensity uncertainty cols 30-31
+#    (LT/GT become upper/lower limits). Each G record belongs to the L record preceding it.
+# 9. Intensity normalization (per level, so datasets share one reference): r = 100*I/I_ref with I_ref = strongest non-limit gamma
+#    (reference has no uncertainty); others get sigma_r = r*sqrt((sigma_I/I)^2 + (sigma_ref/I_ref)^2). Limits scale by the same
+#    factor. evaluatorInput keeps the raw text. Example: RI 80, 20 -> 100, 25; RI 50, 8.5, 10 -> 100, 17, 20.
+# 10. Gamma placement: initialLevel = parent L record; finalLevel = level nearest to E_level - E_gamma; the parent lists
+#    emittedGammas and the final level lists feedingGammas.
+# 11. Output: one {prefix}_dataset_{letter}.json per file (prefix = filename text before the first underscore), complying with
+#    ENSDF JSON Schema 1.0.0 (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
 #
 # Architecture:
-# - `normalize_ensdf_text`: Strips ENSDF markup ({+N}, |g, etc.) for DSID-to-XREF matching.
-# - `parse_xref_file`: Reads XREF.txt into a normalized letter-to-description dictionary.
-# - `match_dsid_to_letter`: Maps a .ens file's DSID to its XREF dataset letter.
-# - `infer_uncertainty_from_precision`: Heuristic engine for precision-based uncertainty estimation.
-# - `extract_target_spin_parity`: Reads target ground-state Jpi from the top general comments; defaults to 0+ (even-even or unspecified).
-# - `infer_spin_parity_from_angular_momentum_transfer`: Computes allowed level Jπ hypotheses via angular momentum coupling.
-# - `parse_spin_parity_range`: Expands range expressions according to ENSDF spin-parity notation standards.
-# - `parse_spin_parity`: Normalizes ENSDF Spin-Parity strings into structured spin/parity hypothesis lists complying with spin-parity.json.
-# - `parse_g_record`: Slices G records into structured gamma transition data dictionaries.
-# - `parse_ensdf_line`: Slices L records into structured level data dictionaries; returns None for annotation/continuation lines.
-# - `convert_ens_files_to_datasets`: Main driver that scans .ens files, matches labels, and writes JSON conforming to JSON Schema 1.0.0.
+# - `infer_uncertainty_from_precision`: Precision-based level uncertainty (5 x the last reported digit place) used when a dataset has decimal energies.
+# - `parse_spin_parity_endpoint`: Parses one range endpoint (spin, parity, tentative flags).
+# - `parse_spin_parity_range`: Expands range expressions (A:B, (A:B)+, A+:B-) per the ENSDF spin-parity notation rules.
+# - `parse_spin_parity`: Converts a spin-parity string (lists, ranges, tentative notation) into spin-parity.json value hypotheses.
+# - `calculate_absolute_uncertainty`: Converts last-digit uncertainty notation into an absolute value.
+# - `format_evaluator_input`: Builds the evaluatorInput string (value plus stated uncertainty).
+# - `extract_target_spin_parity`: Reads the target ground-state spin-parity from the first general comment; defaults to 0+.
+# - `infer_spin_parity_from_angular_momentum_transfer`: Couples target, transferred particle and L-transfer into spin-parity hypotheses.
+# - `parse_level_record`: Converts one L record into a level dictionary (energy, uncertainty, spin-parity); returns None for other lines.
+# - `normalize_ensdf_text`: Strips ENSDF markup ({+N}, |g, etc.) for identifier-to-XREF matching.
+# - `parse_xref_file`: Reads X records into a letter -> reaction dictionary.
+# - `match_dsid_to_letter`: Maps a file's identification text to its XREF dataset letter.
+# - `parse_g_record`: Converts one G record into a gamma dictionary (energy, uncertainty, intensity, limits).
+# - `convert_ens_files_to_datasets`: Driver: cleans the output folder, identifies each dataset, selects the coupling particle from the
+#   reaction, parses L and G records, places gammas, and writes the JSON files.
 """
 
 import json
@@ -75,7 +107,8 @@ def infer_uncertainty_from_precision(value_string):
     """
     Infers uncertainty from reported precision in Evaluated Nuclear Structure Data File (ENSDF) evaluatorInput string.
     
-    Nuclear physics convention: Uncertainty = 0.5 × least_significant_digit_place_value
+    Convention used here: Uncertainty = 5 × least_significant_digit_place_value
+    (half of the next-higher digit place; same rule as the integer default of 5 keV).
     
     Examples:
     - "2000" → ±5 keV (integer, precision to 10s place)
@@ -369,21 +402,20 @@ def calculate_absolute_uncertainty(value_string, uncertainty_string):
     Calculates absolute uncertainty based on Evaluated Nuclear Structure Data File convention.
     123(12) -> 12
     123.4(12) -> 1.2
-    0.123(4) -> 0.0004
+    0.123(4) -> 0.004
+    5.6E-4 with 10 -> 1.0E-4 (uncertainty applies to the last mantissa digit)
     """
     if not uncertainty_string:
         return 0.0
     
-    value_string = value_string.strip()
-    if '.' in value_string:
-        decimal_part = value_string.split('.')[1]
-        decimals = len(decimal_part)
-    else:
-        decimals = 0
+    # Scientific notation: count decimals in the mantissa only, then apply the exponent
+    mantissa_string, _, exponent_string = value_string.strip().upper().partition('E')
+    decimals = len(mantissa_string.split('.')[1]) if '.' in mantissa_string else 0
         
     try:
-        return float(Decimal(uncertainty_string).scaleb(-decimals))
-    except InvalidOperation:
+        exponent = int(exponent_string) if exponent_string else 0
+        return float(Decimal(uncertainty_string).scaleb(exponent - decimals))
+    except (InvalidOperation, ValueError):
         return 0.0
 
 def format_evaluator_input(value_string, uncertainty_string):
@@ -543,10 +575,10 @@ def infer_spin_parity_from_angular_momentum_transfer(angular_momentum_transfer_s
     }
 
 
-def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False, default_angular_momentum_transfer="(0,1,2,3,4,5)", default_level_uncertainty=None):
+def parse_level_record(line, target_spin_parity_string=None, transferred_particle_spin_parity_string="1/2+", is_transfer_reaction=False, default_angular_momentum_transfer="(0,1,2,3,4,5)", default_level_uncertainty=None):
     """
     Parses a single ENSDF L record using fixed-width column slicing.
-    Applies precision-based uncertainty inference when an explicit uncertainty is absent.
+    A missing energy uncertainty is replaced by default_level_uncertainty (dataset-wide 5 or 50 keV) or, failing that, by precision.
     When level spin-parity is unspecified in a transfer reaction:
     - If orbital angular momentum transfer (L) is given, deduces Jπ via angular momentum coupling.
     - If L-transfer is not given, considers L=0,1,2,3,4,5 possible and assigns all coupled Jπ options.
@@ -580,15 +612,17 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
         # Defensive guard: non-numeric energy content is an annotation, not a physics level
         return None, None
     
-    # Calculate uncertainty: explicit if provided, otherwise infer from precision
-    if uncertainty_string:
+    # Stated numeric uncertainty first; letter qualifiers (AP, GE, LT, GT, LE, SY) carry no number, so they fall through to the defaults
+    if uncertainty_string.isdigit():
         uncertainty_value = calculate_absolute_uncertainty(energy_string, uncertainty_string)
     elif energy_value == 0.0:
         # Ground state (0.0 keV) is the absolute reference => 0 uncertainty
         uncertainty_value = 0.0
     else:
         # Dataset-wide default (5 or 50 keV) when all excited-state energies are integers / whole tens
-        uncertainty_value = default_level_uncertainty or infer_uncertainty_from_precision(energy_string) = line[21:39].strip()
+        uncertainty_value = default_level_uncertainty or infer_uncertainty_from_precision(energy_string)
+
+    spin_parity_raw = line[21:39].strip()
     energy_uncertainty_object = (
         {"type": "symmetric", "value": uncertainty_value}
         if uncertainty_value > 0
@@ -603,11 +637,6 @@ def parse_ensdf_line(line, target_spin_parity_string=None, transferred_particle_
         },
         "gamma_decays": []
     }
-    # Stable flag in ENSDF L records: half-life in cols 40-49 explicitly states "STABLE"
-    half_life_raw = line[39:49].strip().upper() if len(line) >= 40 else ""
-    if "STABLE" in half_life_raw or "STAB" in half_life_raw:
-        data["isStable"] = True
-
     spin_parity_values = parse_spin_parity(spin_parity_raw)
     if spin_parity_values:
         data["spinParity"] = {
@@ -709,13 +738,15 @@ def parse_g_record(line):
 
     Column layout (0-indexed, matching ENSDF 80-column standard):
     -  9-18 : Gamma energy (keV)
-    - 19-20 : Energy uncertainty (DE); converted from last-digit notation to absolute keV
+    - 19-20 : Energy uncertainty (DE); converted from last-digit notation to absolute keV.
+              If blank: 1 keV (decimal energy), 20 keV (whole ten), 5 keV (other integer).
     - 21-28 : Relative photon intensity (RI) (cols 22-29, 1-indexed)
     - 29-30 : RI uncertainty (DRI); converted from last-digit notation to absolute intensity
               units using the decimal precision of RI (e.g., RI="98.6" DRI="14" -> 1.4).
-              'LT'/'GT' are limit markers stored as 0.0.
+              'LT'/'GT' are returned as intensity_limit and become upper/lower limits.
     """
-    if len(line) < 23:
+    # Editors may trim trailing spaces, so only the energy field (cols 10-19) is required
+    if len(line) < 10:
         return None
     if len(line) > 5 and line[5] != ' ':
         return None
@@ -737,12 +768,12 @@ def parse_g_record(line):
     except ValueError:
         return None
 
-    if uncertainty_string:
+    if uncertainty_string.isdigit():
         energy_uncertainty = calculate_absolute_uncertainty(energy_string, uncertainty_string)
     elif '.' in energy_string:
         energy_uncertainty = 1.0
     elif int(energy_value) % 10 == 0:
-        energy_uncertainty = 50.0
+        energy_uncertainty = 20.0
     else:
         energy_uncertainty = 5.0
 
@@ -785,9 +816,9 @@ def parse_g_record(line):
 
 def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     """
-    Main driver: scans all .ens files in raw_dir, matches each file to its XREF dataset
-    letter via DSID comparison, parses L records (levels) and G records (gamma transitions),
-    and writes one test_dataset_{letter}.json per file to output_dir.
+    Main driver: cleans output_dir, matches each .ens file in raw_dir to its XREF dataset letter,
+    parses its L records (levels) and G records (gamma transitions), and writes
+    one {prefix}_dataset_{letter}.json per file to output_dir.
     """
     xref_map = parse_xref_file(xref_path)
     os.makedirs(output_dir, exist_ok=True)
@@ -908,7 +939,7 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
             if len(line) < 8:
                 continue
             if line[6:7] == ' ' and line[7:8] == 'L':
-                record_type, record_data = parse_ensdf_line(
+                record_type, record_data = parse_level_record(
                     line,
                     target_spin_parity_string=target_spin_parity_string,
                     transferred_particle_spin_parity_string=transferred_particle_spin,
@@ -932,6 +963,28 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
             if "gamma_decays" in level_item:
                 level_gamma_indices = []
                 initial_level_energy = level_item["energy"]["value"]
+
+                # Normalize intensities so the strongest non-limit gamma of this level = 100 (exact, no uncertainty).
+                # Others: r = 100*I/I_ref, sigma_r = r*sqrt((sigma_I/I)^2 + (sigma_ref/I_ref)^2) (independent measurements).
+                # LT/GT limits scale by the same factor and keep their limit type; no reference => values stay as evaluated.
+                reference_candidates = [gamma for gamma in level_item["gamma_decays"]
+                                        if gamma["has_intensity"] and gamma["intensity_limit"] is None and gamma["relative_intensity_value"] > 0]
+                if reference_candidates:
+                    reference_gamma = max(reference_candidates, key=lambda gamma: gamma["relative_intensity_value"])
+                    reference_value = reference_gamma["relative_intensity_value"]
+                    reference_relative_uncertainty = reference_gamma["intensity_uncertainty_value"] / reference_value
+                    for gamma in level_item["gamma_decays"]:
+                        raw_value = gamma["relative_intensity_value"]
+                        if not gamma["has_intensity"] or raw_value <= 0:
+                            continue
+                        normalized_value = 100.0 * raw_value / reference_value
+                        if gamma is reference_gamma:
+                            normalized_uncertainty = 0.0
+                        else:
+                            own_relative_uncertainty = gamma["intensity_uncertainty_value"] / raw_value
+                            normalized_uncertainty = normalized_value * (own_relative_uncertainty**2 + reference_relative_uncertainty**2) ** 0.5
+                        gamma["relative_intensity_value"] = round(normalized_value, 6)
+                        gamma["intensity_uncertainty_value"] = round(normalized_uncertainty, 6)
 
                 for gamma_data in level_item["gamma_decays"]:
                     gamma_energy_value = gamma_data["energy_value"]
