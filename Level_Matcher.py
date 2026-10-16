@@ -3,11 +3,12 @@ import numpy as np
 from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from Feature_Engineer import extract_features, generate_synthetic_training_data, parse_json_datasets
+from Feature_Engineer import extract_features, generate_synthetic_training_data, parse_json_datasets, Scoring_Config
 from Level_Clusterer import perform_clustering_and_output
 from Training_Metrics_Visualizer import visualize_training_metrics
 import warnings
 import argparse
+import json
 import os
 
 """
@@ -76,12 +77,12 @@ Step 5: Constrained Clustering (Graph Partitioning)
 # ==========================================
 # User Configuration
 # ==========================================
-# The datasets to match are never hard-coded: they are the XREF letters passed with --labels (set by Level_Matcher_GUI.py).
-# They are real-world inference targets, never used for model training or validation. All training uses synthetic data only.
+# The defaults below can be changed in the GUI (Parameters dialog), which passes them with --parameters; the scoring defaults
+# are in Feature_Engineer.py. Datasets come only from --labels: real-world inference targets, never used for training or validation.
 
-# Minimum XGBoost probability for a pair to appear in the pairwise output file.
+# Minimum XGBoost probability for a pair to appear in the pairwise output file and enter clustering.
 pairwise_output_threshold = 0.01
-# Minimum XGBoost probability for a pair to be passed to the clustering algorithm.
+# Minimum XGBoost probability for two levels to join one cluster (Level_Clusterer.py).
 clustering_merge_threshold = 0.15
 
 # Feature names for explicit labeling (prevents sklearn warnings)
@@ -95,7 +96,19 @@ if __name__ == "__main__":
     argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
     argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory for pairwise/, clustering/, figures/ (default: outputs)")
+    argument_parser.add_argument("--parameters", default=None, help="JSON file with parameter values from the GUI (default: values in the scripts)")
     command_line_arguments = argument_parser.parse_args()
+
+    # Parameter values from the GUI replace the script defaults before any training starts
+    user_parameters = {}
+    if command_line_arguments.parameters:
+        with open(command_line_arguments.parameters, 'r', encoding='utf-8') as parameter_file:
+            user_parameters = json.load(parameter_file)
+    pairwise_output_threshold = user_parameters.get('pairwise_output_threshold', pairwise_output_threshold)
+    clustering_merge_threshold = user_parameters.get('clustering_merge_threshold', clustering_merge_threshold)
+    for section_name, section_values in user_parameters.get('Scoring_Config', {}).items():
+        Scoring_Config[section_name].update(section_values)
+    print(f"Parameters: {command_line_arguments.parameters or 'script defaults'}")
     pairwise_output_path = os.path.join(command_line_arguments.output_dir, 'pairwise', 'Output_Level_Pairwise_Inference.txt')
     clustering_output_path = os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt')
     training_figure_path = os.path.join(command_line_arguments.output_dir, 'figures', 'Training_Metrics_Diagnostic.png')
@@ -314,4 +327,4 @@ if __name__ == "__main__":
     # ==========================================
     
     # Execute clustering with XGBoost results
-    perform_clustering_and_output(matching_level_pairs_xgboost, model_xgboost, clustering_output_path, "XGBoost", dataframe)
+    perform_clustering_and_output(matching_level_pairs_xgboost, model_xgboost, clustering_output_path, "XGBoost", dataframe, clustering_merge_threshold)

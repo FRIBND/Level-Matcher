@@ -345,7 +345,19 @@ if __name__ == "__main__":
     argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
     argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
+    argument_parser.add_argument("--parameters", default=None, help="JSON file with parameter values from the GUI (default: values in the script)")
     command_line_arguments = argument_parser.parse_args()
+
+    # Layout and font values from the GUI replace the script defaults
+    if command_line_arguments.parameters:
+        with open(command_line_arguments.parameters, 'r', encoding='utf-8') as parameter_file:
+            user_parameters = json.load(parameter_file)
+        Font_Config.update(user_parameters.get('Font_Config', {}))
+        for layout_name in ('level_scheme_column_spacing', 'level_scheme_bar_width', 'level_scheme_maximum_arrows',
+                            'level_scheme_figure_height_inches', 'clustering_box_padding', 'clustering_minimum_distance',
+                            'clustering_figure_height_multiplier', 'clustering_figure_width_inches', 'clustering_x_spacing',
+                            'clustering_x_axis_margin'):
+            globals()[layout_name] = user_parameters.get(layout_name, globals()[layout_name])
     figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')
     os.makedirs(figure_directory, exist_ok=True)
 

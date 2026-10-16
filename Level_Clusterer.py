@@ -44,10 +44,11 @@ This module is NOT traditional unsupervised Machine Learning clustering (e.g., d
 | **Examples** | Louvain, DBSCAN, Spectral Clustering. | This custom Clique Partitioning Engine. |
 """
 
-def perform_clustering_and_output(matching_level_pairs, model_instance, output_filename, model_name, level_dataframe):
+def perform_clustering_and_output(matching_level_pairs, model_instance, output_filename, model_name, level_dataframe, clustering_merge_threshold):
     """
     Executes constrained graph partitioning and writes results to file.
     Algorithm: Deterministic rule-based partitioning using supervised predictions (NOT unsupervised clustering).
+    clustering_merge_threshold: minimum match probability for two levels to join one cluster (set in the Parameters dialog).
     Refactored to allow independent execution for different models (XGBoost vs LightGBM).
     Preserves all original logic and educational comments.
     """
@@ -55,9 +56,6 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
     # Feature names for explicit labeling (prevents sklearn warnings)
     feature_names = ['Energy_Similarity', 'Spin_Similarity', 'Parity_Similarity', 
                      'Specificity', 'Gamma_Decay_Pattern_Similarity']
-    
-    # Configuration Parameters
-    clustering_merge_threshold = 0.15  # Minimum probability for cluster merging (15%)
 
     # ==========================================
     # Logic: Greedy Constrained Partitioning
@@ -276,9 +274,9 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
                 clustering_output_lines.append(member_line + "\n")
     
     # Write clustering results to file
-    clustering_threshold_percent = int(clustering_merge_threshold * 100)
+    clustering_threshold_percent = clustering_merge_threshold * 100
     with open(output_filename, 'w', encoding='utf-8') as output_file:
-        output_file.write(f"=== FINAL CLUSTERING RESULTS: {model_name} (Merge Threshold: >{clustering_threshold_percent}%) ===\n")
+        output_file.write(f"=== FINAL CLUSTERING RESULTS: {model_name} (Merge Threshold: >{clustering_threshold_percent:g}%) ===\n")
         output_file.write(f"Total Clusters: {len(unique_clusters)}\n")
         output_file.writelines(clustering_output_lines)
     
