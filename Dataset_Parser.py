@@ -17,7 +17,6 @@ Workflow Diagram:
                             |
                             v
                [Identifier -> XREF letter match]
-               (filename fallback: *_test_{letter}.ens)
                             |
          +------------------+--------------------+
          |                                       |
@@ -44,15 +43,13 @@ Workflow Diagram:
          [ENSDF JSON Schema 1.0.0: levelsTable + gammasTable]
                             |
                             v
-         [output_dir/{prefix}_dataset_{letter}.json]
-         (lowercase letters get a _lowercase suffix to avoid
-          case-insensitive filename collisions)
+         [output_dir/{nuclide}_{XREF reaction text}.json  +  dataset_index.json (letter -> file name)]
 
 # Technical Steps:
 # 1. Output folder: create it if missing and delete every existing file in it, so stale JSON never survives a run.
 # 2. XREF: read the X records (col 8 = 'X', col 9 = case-sensitive dataset letter, col 10+ = reaction) into a letter -> reaction map.
 # 3. Dataset letter: match the first-line reaction text (cols 10-39, e.g. "{+33}S(P,G)") to an XREF reaction after removing
-#    markup and uppercasing ("{+33}S" -> "33S"). No match: use the letter in *_test_{letter}.ens, else skip the file. Adopted files are skipped with a note.
+#    markup and uppercasing ("{+33}S" -> "33S"). No match: skip the file with a warning. The adopted file is skipped with a note.
 # 4. Records used: only L records (levels) and G records (gammas) are converted; comments, continuation records, headers and
 #    all other record types are ignored. G records before the first L record are ignored. The identification record and the
 #    first general comment are read only to obtain the reaction and the target ground-state spin-parity.
@@ -75,8 +72,7 @@ Workflow Diagram:
 #    factor. evaluatorInput keeps the raw text. Example: RI 80, 20 -> 100, 25; RI 50, 8.5, 10 -> 100, 17, 20.
 # 10. Gamma placement: initialLevel = parent L record; finalLevel = level nearest to E_level - E_gamma; the parent lists
 #    emittedGammas and the final level lists feedingGammas.
-# 11. Output: one {prefix}_dataset_{letter}.json per file (prefix = filename text before the first underscore), complying with
-#    ENSDF JSON Schema 1.0.0 (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
+# 11. Output: {nuclide}_{XREF}.json. Nuclide from NUCID cols 1-5 (34S, 34Si); XREF text kept verbatim except characters illegal in Windows names (backslash, slash, colon, * ? " < > |), which become '_'. dataset_index.json maps each dataset letter to its file name for the matcher. Content follows ENSDF JSON Schema 1.0.0 (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
 #
 # Architecture:
 # - `infer_uncertainty_from_precision`: Precision-based level uncertainty (5 x the last reported digit place) used when a dataset has decimal energies.
@@ -92,6 +88,7 @@ Workflow Diagram:
 # - `parse_xref_file`: Reads X records into a letter -> reaction dictionary.
 # - `match_dsid_to_letter`: Maps a file's identification text to its XREF dataset letter.
 # - `parse_g_record`: Converts one G record into a gamma dictionary (energy, uncertainty, intensity, limits).
+# - `find_dataset_file`: Returns the JSON path of a dataset letter from dataset_index.json.
 # - `convert_ens_files_to_datasets`: Driver: cleans the output folder, identifies each dataset, selects the coupling particle from the
 #   reaction, parses L and G records, places gammas, and writes the JSON files.
 """
@@ -708,25 +705,10 @@ def parse_xref_file(xref_path):
 
 
 def match_dsid_to_letter(dsid, xref_map):
-    """
-    Matches the DSID string extracted from a .ens identification record to its
-    corresponding XREF dataset letter by direct string comparison.
-
-    Both the DSID (from the .ens identification record) and the XREF descriptions
-    (parsed from the ENSDF X-record format) are already uppercase, so no
-    additional normalization is required beyond whitespace stripping.
-
-    Returns the matched letter string, or None if no match is found.
-    """
+    """Returns the XREF dataset letter whose reaction equals the DSID after markup removal, or None."""
     normalized_dsid = normalize_ensdf_text(dsid)
     for letter, description in xref_map.items():
         if normalized_dsid == normalize_ensdf_text(description):
-            return letter
-
-    # Fallback to direct uppercase comparison without markup stripping
-    raw_dsid = dsid.strip().upper()
-    for letter, description in xref_map.items():
-        if raw_dsid == description.strip().upper():
             return letter
     return None
 
@@ -814,11 +796,17 @@ def parse_g_record(line):
     }
 
 
+def find_dataset_file(dataset_code, json_directory):
+    """Returns the JSON path of a dataset letter, read from the dataset_index.json written by the parser."""
+    with open(os.path.join(json_directory, "dataset_index.json"), "r", encoding="utf-8") as index_file:
+        return os.path.join(json_directory, json.load(index_file)[dataset_code])
+
+
 def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     """
     Main driver: cleans output_dir, matches each .ens file in raw_dir to its XREF dataset letter,
     parses its L records (levels) and G records (gamma transitions), and writes
-    one {prefix}_dataset_{letter}.json per file to output_dir.
+    one {nuclide}_{XREF}.json per file to output_dir, plus dataset_index.json (letter -> file name).
     """
     xref_map = parse_xref_file(xref_path)
     os.makedirs(output_dir, exist_ok=True)
@@ -833,13 +821,18 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         print(f"No .ens files found in '{raw_dir}'.")
         return
 
+    dataset_index = {}  # dataset letter -> output file name
+
     for ens_filename in ens_files:
-        # Extract the nucleus/target prefix from the .ens filename (e.g., 'S34' from 'S34_30si_a_g_a_n_resonances.ens')
-        file_prefix = ens_filename.split('_')[0].rstrip('.ens') if '_' in ens_filename else ens_filename.rstrip('.ens')
         filepath = os.path.join(raw_dir, ens_filename)
 
         with open(filepath, 'r', encoding='utf-8') as f:
             lines = f.readlines()
+
+        # Nuclide name from the NUCID in cols 1-5: mass number + capitalized symbol (34S, 34Si)
+        nucid_text = lines[0][:5].strip()
+        element_symbol = nucid_text.lstrip("0123456789")
+        nuclide_name = nucid_text[:len(nucid_text) - len(element_symbol)] + element_symbol.capitalize()
 
         # 1. Extract DSID from the identification record (first line, cols 9-38, 0-indexed)
         dsid = ""
@@ -851,20 +844,11 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
             print(f"Note: '{ens_filename}' is the Adopted file (XREF source). Skipping.")
             continue
 
-        # 2. Match DSID to XREF letter.
-        # Primary path: normalize the DSID extracted from the identification record and look
-        # it up in the XREF map.  Fallback path: if the file has no identification record
-        # (e.g. synthetic test datasets that start immediately with L records), extract the
-        # dataset letter directly from the filename pattern "*_test_{letter}.ens".
+        # 2. Match DSID to XREF letter (markup removed, uppercased)
         letter = match_dsid_to_letter(dsid, xref_map)
         if letter is None:
-            test_filename_match = re.search(r'test_([a-zA-Z])\.ens$', ens_filename, re.IGNORECASE)
-            if test_filename_match:
-                letter = test_filename_match.group(1).upper()
-                print(f"Note: No XREF match for '{ens_filename}'; using filename-derived label '{letter}'.")
-            else:
-                print(f"Warning: DSID '{dsid}' in '{ens_filename}' did not match any XREF entry. Skipping.")
-                continue
+            print(f"Warning: DSID '{dsid}' in '{ens_filename}' did not match any XREF entry. Skipping.")
+            continue
 
         print(f"Processing '{ens_filename}' -> Dataset {letter} (DSID: {dsid})...")
 
@@ -1049,12 +1033,17 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         if gammas_table_list:
             output_data_structure["gammasTable"] = {"gammas": gammas_table_list}
 
-        # Use prefix from the .ens filename and append '_lowercase' for lowercase letters to avoid case collisions.
-        file_label = f"{letter}_lowercase" if letter.islower() else letter
-        output_path = os.path.join(os.path.abspath(output_dir), f"{file_prefix}_dataset_{file_label}.json")
+        # NNDC-style name; ':' in ':RESONANCES' and other Windows-illegal characters become '_'
+        safe_xref_text = re.sub(r'[\\/:*?"<>|]', '_', xref_map[letter])
+        output_filename = f"{nuclide_name}_{safe_xref_text}.json"
+        dataset_index[letter] = output_filename
+        output_path = os.path.join(os.path.abspath(output_dir), output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output_data_structure, f, indent=4)
         print(f"Dataset {letter} saved to {output_path}")
+
+    with open(os.path.join(output_dir, "dataset_index.json"), 'w', encoding='utf-8') as index_file:
+        json.dump(dataset_index, index_file, indent=4)
 
 
 if __name__ == "__main__":

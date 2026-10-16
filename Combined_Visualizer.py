@@ -45,6 +45,7 @@ import argparse
 
 # Import the inference dataset list from the single source of truth (Level_Matcher.py user configuration)
 from Level_Matcher import inference_dataset_labels
+from Dataset_Parser import find_dataset_file
 
 # Tunable level scheme layout knobs (bars and arrows are drawn to the true energy scale)
 level_scheme_column_spacing = 3.0         # Horizontal distance between dataset columns
@@ -108,21 +109,7 @@ def spread_text_positions(values, minimum_distance):
 
 def load_dataset(dataset_code, json_directory='data/json'):
     """Load level data and gamma table from JSON file for a given dataset code."""
-    # Detect prefix from any existing JSON file in the directory to infer the nucleus/target name.
-    candidate_files = [f for f in os.listdir(json_directory) if f.endswith('.json')] if os.path.isdir(json_directory) else []
-    file_prefix = None
-    if candidate_files:
-        first_file = candidate_files[0]
-        parts = first_file.replace('.json', '').split('_dataset_')
-        file_prefix = parts[0] if parts else None
-    if file_prefix is None:
-        file_prefix = "test"  # fallback to legacy naming
-    file_label = f"{dataset_code}_lowercase" if dataset_code.islower() else dataset_code
-    filename = os.path.join(json_directory, f"{file_prefix}_dataset_{file_label}.json")
-    if not os.path.exists(filename):
-        filename = os.path.join(json_directory.replace(json_directory, 'data/raw'), f"{file_prefix}_dataset_{file_label}.json") if json_directory != 'data/json' else f"data/raw/{file_prefix}_dataset_{file_label}.json"
-    if not os.path.exists(filename):
-        return [], []
+    filename = find_dataset_file(dataset_code, json_directory)
     
     with open(filename, 'r', encoding='utf-8') as file_handle:
         data = json.load(file_handle)
@@ -359,7 +346,7 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
 if __name__ == "__main__":
     argument_parser = argparse.ArgumentParser(description="Render level scheme and clustering figures.")
     argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to draw (default: inference_dataset_labels)")
-    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with test_dataset_{letter}.json files")
+    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with the parsed dataset JSON files and dataset_index.json")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
     command_line_arguments = argument_parser.parse_args()
     figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')

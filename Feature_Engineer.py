@@ -126,6 +126,7 @@ import re
 import numpy as np
 import json
 import os
+from Dataset_Parser import find_dataset_file
 
 # ==========================================
 # Configuration: Scoring Parameters
@@ -238,7 +239,7 @@ Scoring_Config = {
 def parse_json_datasets(dataset_codes, json_directory=None):
     """
     Parses JSON files (modern schema) for the given dataset codes and returns a list of standardized level dictionaries.
-    Input files: test_dataset_{code}.json
+    Input files: {nuclide}_{XREF}.json, located through dataset_index.json (letter -> file name).
         Standardized Keys: dataset_code, level_id, energy_value, energy_uncertainty, spin_parity_list, spin_parity_string.
         FRIBND: `spin_parity_string` is the string taken from `spinParity.evaluatorInput`.
     Example Output (includes an ENSDF-style (3/2,5/2)+ case):
@@ -258,80 +259,58 @@ def parse_json_datasets(dataset_codes, json_directory=None):
     """
     levels = []
     
-    # Robustly determine data directory relative to this script.
-    # Primary location is data/json/ because Dataset_Parser now writes standardized
-    # datasets there. Fall back to data/raw/ to preserve compatibility with older
-    # example repositories and pre-existing test fixtures.
-    # A user-supplied json_directory (graphical interface workspace) takes precedence over the defaults.
+    # A user-supplied json_directory (graphical interface workspace) takes precedence over the default data/json.
     base_dir = os.path.dirname(os.path.abspath(__file__))
     preferred_data_dir = json_directory if json_directory else os.path.join(base_dir, 'data', 'json')
-    fallback_data_dir = os.path.join(base_dir, 'data', 'raw')
-    
-    # Detect the prefix from any existing JSON file to infer the nucleus/target name (e.g., 'S34' from 'S34_dataset_L.json')
-    candidate_files = [f for f in os.listdir(preferred_data_dir) if f.endswith('.json')] if os.path.isdir(preferred_data_dir) else []
-    file_prefix = None
-    if candidate_files:
-        first_file = candidate_files[0]
-        parts = first_file.replace('.json', '').split('_dataset_')
-        file_prefix = parts[0] if parts else None
-    if file_prefix is None:
-        file_prefix = "test"  # fallback to legacy naming if no files found
 
     for dataset_code in dataset_codes:
-        # Lowercase letters use a '_lowercase' suffix to avoid case collisions on case-insensitive filesystems.
-        file_label = f"{dataset_code}_lowercase" if dataset_code.islower() else dataset_code
-        filename = os.path.join(preferred_data_dir, f"{file_prefix}_dataset_{file_label}.json")
-        if not os.path.exists(filename):
-            filename = os.path.join(fallback_data_dir, f"{file_prefix}_dataset_{file_label}.json")
-
-        if os.path.exists(filename):
-            with open(filename, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+        with open(find_dataset_file(dataset_code, preferred_data_dir), 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+            # Format: New ENSDF JSON schema (levels_table -> levels, gammas_table -> gammas)
+            if isinstance(data, dict) and 'levelsTable' in data:
+                raw_levels = data['levelsTable'].get('levels', [])
+                gammas_table_list = data.get('gammasTable', {}).get('gammas', [])
                 
-                # Format: New ENSDF JSON schema (levels_table -> levels, gammas_table -> gammas)
-                if isinstance(data, dict) and 'levelsTable' in data:
-                    raw_levels = data['levelsTable'].get('levels', [])
-                    gammas_table_list = data.get('gammasTable', {}).get('gammas', [])
+                for level_index, level_item in enumerate(raw_levels):
+                    energy_value = level_item.get('energy', {}).get('value')
+                    energy_uncertainty = level_item.get('energy', {}).get('uncertainty', {}).get('value', 0.0 if (energy_value is not None and float(energy_value) == 0.0) else 5.0)
+                    spin_parity_list = level_item.get('spinParity', {}).get('values', [])
+                    spin_parity_string = (
+                        level_item.get('spinParity', {}).get('stringRepresentation')
+                        or level_item.get('spinParity', {}).get('evaluatorInput')
+                    )
                     
-                    for level_index, level_item in enumerate(raw_levels):
-                        energy_value = level_item.get('energy', {}).get('value')
-                        energy_uncertainty = level_item.get('energy', {}).get('uncertainty', {}).get('value', 0.0 if (energy_value is not None and float(energy_value) == 0.0) else 5.0)
-                        spin_parity_list = level_item.get('spinParity', {}).get('values', [])
-                        spin_parity_string = (
-                            level_item.get('spinParity', {}).get('stringRepresentation')
-                            or level_item.get('spinParity', {}).get('evaluatorInput')
-                        )
-                        
-                        # Extract gamma decays for this level from gammas_table_list
-                        gamma_decays = []
-                        gamma_indices = level_item.get('emittedGammas') or level_item.get('gammas') or []
-                        if gamma_indices and gammas_table_list:
-                            # Level has gamma indices pointing to gammas_table_list
-                            for gamma_index in gamma_indices:
-                                if 0 <= gamma_index < len(gammas_table_list):
-                                    gamma_entry = gammas_table_list[gamma_index]
-                                    gamma_energy = gamma_entry['energy']
-                                    gamma_intensity = gamma_entry.get('intensity') or gamma_entry.get('gammaIntensity', {})
-                                    intensity_unc = gamma_intensity.get('uncertainty', {})
-                                    intensity_unc_value = intensity_unc.get('value', 0) if isinstance(intensity_unc, dict) else 0
-                                    
-                                    gamma_decays.append({
-                                        'energy': gamma_energy['value'],
-                                        'energy_uncertainty': gamma_energy.get('uncertainty', {}).get('value', 5.0) if isinstance(gamma_energy.get('uncertainty'), dict) else 5.0,
-                                        'intensity': gamma_intensity.get('value', 0),
-                                        'intensity_uncertainty': intensity_unc_value
-                                    })
-                        
-                        if energy_value is not None:
-                            levels.append({
-                                'dataset_code': dataset_code,
-                                'level_id': f"{dataset_code}_{int(energy_value)}",
-                                'energy_value': float(energy_value),
-                                'energy_uncertainty': float(energy_uncertainty),
-                                'spin_parity_list': spin_parity_list,
-                                'spin_parity_string': spin_parity_string,
-                                'gamma_decays': gamma_decays
-                            })
+                    # Extract gamma decays for this level from gammas_table_list
+                    gamma_decays = []
+                    gamma_indices = level_item.get('emittedGammas') or level_item.get('gammas') or []
+                    if gamma_indices and gammas_table_list:
+                        # Level has gamma indices pointing to gammas_table_list
+                        for gamma_index in gamma_indices:
+                            if 0 <= gamma_index < len(gammas_table_list):
+                                gamma_entry = gammas_table_list[gamma_index]
+                                gamma_energy = gamma_entry['energy']
+                                gamma_intensity = gamma_entry.get('intensity') or gamma_entry.get('gammaIntensity', {})
+                                intensity_unc = gamma_intensity.get('uncertainty', {})
+                                intensity_unc_value = intensity_unc.get('value', 0) if isinstance(intensity_unc, dict) else 0
+                                
+                                gamma_decays.append({
+                                    'energy': gamma_energy['value'],
+                                    'energy_uncertainty': gamma_energy.get('uncertainty', {}).get('value', 5.0) if isinstance(gamma_energy.get('uncertainty'), dict) else 5.0,
+                                    'intensity': gamma_intensity.get('value', 0),
+                                    'intensity_uncertainty': intensity_unc_value
+                                })
+                    
+                    if energy_value is not None:
+                        levels.append({
+                            'dataset_code': dataset_code,
+                            'level_id': f"{dataset_code}_{int(energy_value)}",
+                            'energy_value': float(energy_value),
+                            'energy_uncertainty': float(energy_uncertainty),
+                            'spin_parity_list': spin_parity_list,
+                            'spin_parity_string': spin_parity_string,
+                            'gamma_decays': gamma_decays
+                        })
     return levels
 
 def calculate_z_score(value_1, uncertainty_1, value_2, uncertainty_2):

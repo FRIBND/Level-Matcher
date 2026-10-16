@@ -15,7 +15,7 @@ Workflow Diagram:
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{prefix}_dataset_{letter}.json]
+  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{nuclide}_{XREF}.json + dataset_index.json]
             |
             v
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
@@ -88,7 +88,7 @@ class Level_Matcher_Interface:
         table_style.configure("Treeview", font=self.monospace_font, rowheight=self.monospace_font.metrics("linespace") + 6)
         table_style.configure("Treeview.Heading", font=(menu_family, 10, "bold"))
 
-        # Title bar icon: multi-size FRIB emblem (Windows picks the size matching the display scale)
+        # Title bar icon
         title_icon_path = os.path.join(project_directory, "assets", "frib_logo.ico")
         if os.name == "nt" and os.path.isfile(title_icon_path):
             root_window.iconbitmap(default=title_icon_path)
@@ -106,7 +106,7 @@ class Level_Matcher_Interface:
         except (OSError, ValueError):
             last_workspace = ""
 
-        # Footer (packed first so it always stays visible): status text on the left, small FRIB logo on the right
+        # Footer: status text on the left, small FRIB logo on the right
         ttk.Separator(root_window, orient="horizontal").pack(side="bottom", fill="x")
         footer_frame = tk.Frame(root_window, background="white")
         footer_frame.pack(side="bottom", fill="x")
@@ -119,14 +119,14 @@ class Level_Matcher_Interface:
             tk.Label(footer_frame, image=self.footer_logo, background="white").pack(side="right", padx=12, pady=2)
 
         # 1. Workspace selection row
-        workspace_frame = ttk.LabelFrame(root_window, text="1. Workspace folder (contains .ens files including the adopted file)")
+        workspace_frame = ttk.LabelFrame(root_window, text="Workspace folder contains .ens files")
         workspace_frame.pack(fill="x", padx=10, pady=(10, 5))
         self.workspace_variable = tk.StringVar()
         ttk.Entry(workspace_frame, textvariable=self.workspace_variable, font=self.monospace_font).pack(side="left", fill="x", expand=True, padx=5, pady=5)
         ttk.Button(workspace_frame, text="Browse...", command=self.browse_workspace).pack(side="left", padx=5, pady=5)
 
         # 2. Dataset selection table: Letter | XREF reaction | data file
-        dataset_frame = ttk.LabelFrame(root_window, text="2. Select datasets to match (Ctrl or Shift for multiple)")
+        dataset_frame = ttk.LabelFrame(root_window, text="Select datasets to match levels (Ctrl or Shift for multiple)")
         dataset_frame.pack(fill="both", expand=True, padx=10, pady=5)
         self.dataset_table = ttk.Treeview(dataset_frame, columns=("letter", "reaction", "filename"), show="headings",
                                           selectmode="extended", height=8)
@@ -149,7 +149,7 @@ class Level_Matcher_Interface:
         ttk.Button(action_frame, text="Clear Selection",
                    command=lambda: self.dataset_table.selection_remove(self.dataset_table.selection())).pack(side="left", padx=(5, 0))
         self.run_button = ttk.Button(action_frame, text="Run Level Matcher", command=self.run_matcher)
-        self.run_button.pack(side="right")
+        self.run_button.pack(side="right", padx=(0, 25))
 
         # 4. Log panel
         log_frame = ttk.LabelFrame(root_window, text="Log")

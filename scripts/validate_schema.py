@@ -75,7 +75,8 @@ wrapper_schema = {
 validator = Draft202012Validator(wrapper_schema, registry=registry)
 
 # 3. Validate every file and collect all violations
-json_paths = sorted(glob.glob(os.path.join(arguments.json_dir, "*.json")))
+json_paths = sorted(path for path in glob.glob(os.path.join(arguments.json_dir, "*.json"))
+                    if os.path.basename(path) != "dataset_index.json")  # index maps letters to files; it is not a dataset
 if not json_paths:
     print(f"No .json files found in '{arguments.json_dir}'.")
     sys.exit(1)
