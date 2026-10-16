@@ -15,7 +15,7 @@ Workflow Diagram:
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{nuclide}_{XREF}.json + dataset_index.json]
+  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{nuclide}_{XREF}.json]
             |
             v
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
@@ -257,6 +257,7 @@ class Level_Matcher_Interface:
         # The adopted dataset file begins with the XREF (X records) letter list; fall back to XREF.txt.
         adopted_files = sorted(name for name in os.listdir(workspace_path) if "adopted" in name.lower() and name.endswith(".ens"))
         xref_path = os.path.join(workspace_path, adopted_files[0] if adopted_files else "XREF.txt")
+        self.xref_path = xref_path
         command = [sys.executable, os.path.join(project_directory, "Dataset_Parser.py"),
                    "--raw_dir", workspace_path,
                    "--xref", xref_path,
@@ -285,6 +286,7 @@ class Level_Matcher_Interface:
             return
 
         shared_arguments = ["--labels", *selected_letters,
+                            "--xref", self.xref_path,
                             "--json_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json"),
                             "--output_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "outputs")]
         commands = [

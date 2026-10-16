@@ -49,7 +49,7 @@ Functional Architecture:
                                               to XGBoost
 
 Technical Components:
-1. **`parse_json_datasets(dataset_codes)`** — Data Ingestion:
+1. **`parse_json_datasets(dataset_codes, json_directory, xref_path)`** — Data Ingestion:
    Parses NNDC JSON schema → list of level dicts with keys:
    `energy_value`, `energy_uncertainty`, `spin_parity_list`, `gamma_decays`.
    Uncertainties come from Dataset_Parser.py (inferred from ENSDF precision); fallback = 5.0 keV.
@@ -126,7 +126,7 @@ import re
 import numpy as np
 import json
 import os
-from Dataset_Parser import find_dataset_file
+from Dataset_Parser import find_dataset_file, parse_xref_file
 
 # ==========================================
 # Configuration: Scoring Parameters
@@ -236,10 +236,10 @@ Scoring_Config = {
     }
 }
 
-def parse_json_datasets(dataset_codes, json_directory=None):
+def parse_json_datasets(dataset_codes, json_directory, xref_path):
     """
-    Parses JSON files (modern schema) for the given dataset codes and returns a list of standardized level dictionaries.
-    Input files: {nuclide}_{XREF}.json, located through dataset_index.json (letter -> file name).
+    Parses JSON files (modern schema) for the given dataset codes (XREF letters) and returns a list of standardized level dictionaries.
+    Input files: {nuclide}_{XREF}.json in json_directory; the letter -> XREF text link comes from the X records in xref_path.
         Standardized Keys: dataset_code, level_id, energy_value, energy_uncertainty, spin_parity_list, spin_parity_string.
         FRIBND: `spin_parity_string` is the string taken from `spinParity.evaluatorInput`.
     Example Output (includes an ENSDF-style (3/2,5/2)+ case):
@@ -258,13 +258,10 @@ def parse_json_datasets(dataset_codes, json_directory=None):
       ]
     """
     levels = []
-    
-    # A user-supplied json_directory (graphical interface workspace) takes precedence over the default data/json.
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    preferred_data_dir = json_directory if json_directory else os.path.join(base_dir, 'data', 'json')
+    xref_map = parse_xref_file(xref_path)
 
     for dataset_code in dataset_codes:
-        with open(find_dataset_file(dataset_code, preferred_data_dir), 'r', encoding='utf-8') as f:
+        with open(find_dataset_file(dataset_code, json_directory, xref_map), 'r', encoding='utf-8') as f:
             data = json.load(f)
             
             # Format: New ENSDF JSON schema (levels_table -> levels, gammas_table -> gammas)

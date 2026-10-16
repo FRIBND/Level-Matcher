@@ -45,7 +45,7 @@ import argparse
 
 # Import the inference dataset list from the single source of truth (Level_Matcher.py user configuration)
 from Level_Matcher import inference_dataset_labels
-from Dataset_Parser import find_dataset_file
+from Dataset_Parser import find_dataset_file, parse_xref_file
 
 # Tunable level scheme layout knobs (bars and arrows are drawn to the true energy scale)
 level_scheme_column_spacing = 3.0         # Horizontal distance between dataset columns
@@ -107,9 +107,9 @@ def spread_text_positions(values, minimum_distance):
 # LEVEL SCHEME VISUALIZER (INPUT DATA)
 # ============================================================================
 
-def load_dataset(dataset_code, json_directory='data/json'):
+def load_dataset(dataset_code, json_directory, xref_map):
     """Load level data and gamma table from JSON file for a given dataset code."""
-    filename = find_dataset_file(dataset_code, json_directory)
+    filename = find_dataset_file(dataset_code, json_directory, xref_map)
     
     with open(filename, 'r', encoding='utf-8') as file_handle:
         data = json.load(file_handle)
@@ -121,7 +121,7 @@ def load_dataset(dataset_code, json_directory='data/json'):
             return data, []
     return [], []
 
-def plot_level_schemes(datasets=None, json_directory='data/json', output_file='outputs/figures/Input_Level_Scheme.png'):
+def plot_level_schemes(datasets=None, json_directory='data/json', xref_path='data/raw/XREF.txt', output_file='outputs/figures/Input_Level_Scheme.png'):
     """Render inference datasets on one shared energy axis: level bars and gamma arrows only.
 
     Bars and arrows are drawn to the true energy scale with no per-level text labels,
@@ -130,7 +130,8 @@ def plot_level_schemes(datasets=None, json_directory='data/json', output_file='o
     the datasets that were selected for inference.
     """
     datasets = datasets or inference_dataset_labels
-    dataset_contents = {code: load_dataset(code, json_directory) for code in datasets}
+    xref_map = parse_xref_file(xref_path)
+    dataset_contents = {code: load_dataset(code, json_directory, xref_map) for code in datasets}
 
     figure_width = 4.0 + len(datasets) * level_scheme_column_spacing
     figure, axis = plt.subplots(figsize=(figure_width, level_scheme_figure_height_inches))
@@ -346,14 +347,15 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
 if __name__ == "__main__":
     argument_parser = argparse.ArgumentParser(description="Render level scheme and clustering figures.")
     argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to draw (default: inference_dataset_labels)")
-    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with the parsed dataset JSON files and dataset_index.json")
+    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with the parsed dataset JSON files")
+    argument_parser.add_argument("--xref", default="data/raw/XREF.txt", help="File with the X records (adopted .ens or XREF.txt)")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
     command_line_arguments = argument_parser.parse_args()
     figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')
     os.makedirs(figure_directory, exist_ok=True)
 
     print("Combined Visualizer: generating plots...")
-    plot_level_schemes(command_line_arguments.labels, command_line_arguments.json_dir,
+    plot_level_schemes(command_line_arguments.labels, command_line_arguments.json_dir, command_line_arguments.xref,
                        os.path.join(figure_directory, 'Input_Level_Scheme.png'))
     plot_clustering_results(
         input_path=os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt'),

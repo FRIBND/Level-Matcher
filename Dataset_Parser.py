@@ -5,92 +5,54 @@ Dataset Parser for Nuclear Level Matcher
 # High-level Structure and Workflow Explanation:
 ======================================
 
+Converts the ENSDF .ens dataset files of one workspace into ENSDF JSON Schema 1.0.0 files for the Level Matcher.
+
 Workflow Diagram:
 
-  [--raw_dir/*.ens files]            [--xref: adopted .ens X records or XREF.txt]
-         |                                        |
-         v                                        v
-  [Identification record]               [X records: letter -> reaction map]
-  [dataset identifier, cols 10-39]      [reaction descriptions]
-         |                                        |
-         +------------------+---------------------+
-                            |
-                            v
-               [Identifier -> XREF letter match]
-                            |
-         +------------------+--------------------+
-         |                                       |
-         v                                       v
-  [First general comment]              [Reaction type from identifier]
-  [target ground-state spin-parity;    [transferred / captured particle spin-parity]
-   default 0+]                                    |
-         |                                        |
-         +------------------+---------------------+
-                            |
-                            v
-         [L records]  -->  [G records after each L record]
-         [energy, uncertainty, spin-parity]   [energy, uncertainty, intensity]
-                            |
-                            v
-         [Blank spin-parity in transfer/capture reactions]
-         --> [angular momentum coupling from L-transfer (cols 56-64)]
-                            |
-                            v
-         [Gamma placement: initial level = parent L record,
-          final level = nearest level to E_level - E_gamma]
-                            |
-                            v
-         [ENSDF JSON Schema 1.0.0: levelsTable + gammasTable]
-                            |
-                            v
-         [output_dir/{nuclide}_{XREF reaction text}.json  +  dataset_index.json (letter -> file name)]
+  [.ens files in --raw_dir]            [X records in --xref: letter -> dataset name]
+              |                                          |
+              +--------------------+---------------------+
+                                   |
+                                   v
+                 [Match each file's first-line dataset name to an XREF letter]
+                                   |
+                                   v
+                 [L records -> levels]            [G records -> gammas]
+                                   |
+                                   v
+     [Spin-parity coupling] -> [Default uncertainties] -> [Intensity normalization] -> [Gamma final levels]
+                                   |
+                                   v
+                      [{nuclide}_{XREF text}.json in --output_dir]
 
-# Technical Steps:
-# 1. Output folder: create it if missing and delete every existing file in it, so stale JSON never survives a run.
-# 2. XREF: read the X records (col 8 = 'X', col 9 = case-sensitive dataset letter, col 10+ = reaction) into a letter -> reaction map.
-# 3. Dataset letter: match the first-line reaction text (cols 10-39, e.g. "{+33}S(P,G)") to an XREF reaction after removing
-#    markup and uppercasing ("{+33}S" -> "33S"). No match: skip the file with a warning. The adopted file is skipped with a note.
-# 4. Records used: only L records (levels) and G records (gammas) are converted; comments, continuation records, headers and
-#    all other record types are ignored. G records before the first L record are ignored. The identification record and the
-#    first general comment are read only to obtain the reaction and the target ground-state spin-parity.
-# 5. Level fields (fixed-width slicing): energy cols 10-19, uncertainty cols 20-21, spin-parity cols 22-39
-#    (half-life is ignored: not used for level matching). Spin-parity strings (lists, ranges, tentative parentheses) become twoTimesSpin/parity
-#    hypotheses; tentative flags are written only when true.
-# 6. Spin-parity inference: when a level has no spin-parity and the reaction is a transfer, capture, inelastic scattering, charge
-#    exchange or resonance reaction, the target spin-parity (first general comment, default 0+) is coupled with the transferred or
-#    captured particle spin-parity (reaction map; several spin options are coupled separately and unioned) using the L-transfer in
-#    cols 56-64. Comma = union of L values, plus = intersection of L values, parentheses = tentative. Without an L value the default
-#    is tentative L = 0..5 (thermal neutron capture: L = 0). Other datasets keep an empty spin-parity for energy-based matching.
-# 7. Missing energy uncertainties (stated numeric uncertainties are always kept, cols 20-21 for levels and gammas; letter
-#    qualifiers such as AP, GE, LT are treated as missing): level energies take
-#    50 keV if all excited-state energies in the dataset are whole tens, 5 keV if all are integers, otherwise precision-based
-#    (ground state = none); gamma energies take 1 keV (decimal), 5 keV (integer), 20 keV (whole ten).
-# 8. Gamma fields: energy cols 10-19, uncertainty cols 20-21, relative intensity cols 22-29, intensity uncertainty cols 30-31
-#    (LT/GT become upper/lower limits). Each G record belongs to the L record preceding it.
-# 9. Intensity normalization (per level, so datasets share one reference): r = 100*I/I_ref with I_ref = strongest non-limit gamma
-#    (reference has no uncertainty); others get sigma_r = r*sqrt((sigma_I/I)^2 + (sigma_ref/I_ref)^2). Limits scale by the same
-#    factor. evaluatorInput keeps the raw text. Example: RI 80, 20 -> 100, 25; RI 50, 8.5, 10 -> 100, 17, 20.
-# 10. Gamma placement: initialLevel = parent L record; finalLevel = level nearest to E_level - E_gamma; the parent lists
-#    emittedGammas and the final level lists feedingGammas.
-# 11. Output: {nuclide}_{XREF}.json. Nuclide from NUCID cols 1-5 (34S, 34Si); XREF text kept verbatim except characters illegal in Windows names (backslash, slash, colon, * ? " < > |), which become '_'. dataset_index.json maps each dataset letter to its file name for the matcher. Content follows ENSDF JSON Schema 1.0.0 (level.json, level-energy.json, spin-parity.json, gamma.json, radiation-energy.json, radiation-intensity.json).
-#
-# Architecture:
-# - `infer_uncertainty_from_precision`: Precision-based level uncertainty (5 x the last reported digit place) used when a dataset has decimal energies.
-# - `parse_spin_parity_endpoint`: Parses one range endpoint (spin, parity, tentative flags).
-# - `parse_spin_parity_range`: Expands range expressions (A:B, (A:B)+, A+:B-) per the ENSDF spin-parity notation rules.
-# - `parse_spin_parity`: Converts a spin-parity string (lists, ranges, tentative notation) into spin-parity.json value hypotheses.
-# - `calculate_absolute_uncertainty`: Converts last-digit uncertainty notation into an absolute value.
-# - `format_evaluator_input`: Builds the evaluatorInput string (value plus stated uncertainty).
-# - `extract_target_spin_parity`: Reads the target ground-state spin-parity from the first general comment; defaults to 0+.
-# - `infer_spin_parity_from_angular_momentum_transfer`: Couples target, transferred particle and L-transfer into spin-parity hypotheses.
-# - `parse_level_record`: Converts one L record into a level dictionary (energy, uncertainty, spin-parity); returns None for other lines.
-# - `normalize_ensdf_text`: Strips ENSDF markup ({+N}, |g, etc.) for identifier-to-XREF matching.
-# - `parse_xref_file`: Reads X records into a letter -> reaction dictionary.
-# - `match_dsid_to_letter`: Maps a file's identification text to its XREF dataset letter.
-# - `parse_g_record`: Converts one G record into a gamma dictionary (energy, uncertainty, intensity, limits).
-# - `find_dataset_file`: Returns the JSON path of a dataset letter from dataset_index.json.
-# - `convert_ens_files_to_datasets`: Driver: cleans the output folder, identifies each dataset, selects the coupling particle from the
-#   reaction, parses L and G records, places gammas, and writes the JSON files.
+Technical Steps:
+1. Output folder: every existing file in it is deleted first.
+2. XREF: the X records (col 8 'X', col 9 letter, cols 10+ dataset name) give letter -> name. The adopted file is skipped.
+3. Dataset match: the first-line name (cols 10-39) must equal an XREF name after markup removal ("{+33}S" -> "33S") and
+   uppercasing. No match: the file is skipped with a warning.
+4. Records: only L records (energy cols 10-19, uncertainty 20-21, spin-parity 22-39, L-transfer 56-64) and G records (energy
+   10-19, uncertainty 20-21, intensity 22-29, intensity uncertainty 30-31) are used. A G record belongs to the L record above it.
+   All other records and fields (for example half-life) are ignored.
+5. Spin-parity: parsed when given. When blank in a transfer, capture, inelastic, charge-exchange or resonance reaction, it is coupled
+   from the target Jpi (first general comment, default 0+), the reaction's particle spin-parity and the L-transfer (comma = union,
+   plus = intersection, parentheses = tentative; no L = tentative 0..5, thermal capture = 0).
+6. Uncertainties: stated numbers are kept; blank values and letter qualifiers (AP, GE, LT) take defaults. Levels: 50 keV if all
+   excited energies are whole tens, 5 keV if all are integers, else 5 x the last digit place; ground state none. Gammas: 1 keV
+   (decimal), 20 keV (whole ten), 5 keV (other integer).
+7. Intensities: per level, the strongest non-limit gamma becomes 100 with no uncertainty. Others: r = 100*I/I_ref and
+   sigma_r = r*sqrt((sigma_I/I)^2 + (sigma_ref/I_ref)^2). LT/GT limits scale by the same factor. A level without a non-limit
+   intensity keeps its values.
+8. Gamma levels: initial = parent L record; final = level nearest to E_level - E_gamma.
+9. Output: {nuclide}_{XREF}.json, NNDC style (34S_34CL EC DECAY (1.5266 S).json). Nuclide from NUCID cols 1-5 (34S, 34Si);
+   Windows-illegal characters in the name become '_'. The matcher finds each file from its XREF letter through the same X records.
+
+Architecture:
+- Spin-parity: `parse_spin_parity` (with `parse_spin_parity_endpoint`, `parse_spin_parity_range`), `extract_target_spin_parity`,
+  `infer_spin_parity_from_angular_momentum_transfer`.
+- Numbers: `calculate_absolute_uncertainty`, `infer_uncertainty_from_precision`, `format_evaluator_input`.
+- Records: `parse_level_record`, `parse_g_record`.
+- XREF and file names: `parse_xref_file`, `normalize_ensdf_text`, `match_dsid_to_letter`, `dataset_json_name`, `find_dataset_file`.
+- Driver: `convert_ens_files_to_datasets`.
 """
 
 import json
@@ -796,17 +758,25 @@ def parse_g_record(line):
     }
 
 
-def find_dataset_file(dataset_code, json_directory):
-    """Returns the JSON path of a dataset letter, read from the dataset_index.json written by the parser."""
-    with open(os.path.join(json_directory, "dataset_index.json"), "r", encoding="utf-8") as index_file:
-        return os.path.join(json_directory, json.load(index_file)[dataset_code])
+def dataset_json_name(xref_text):
+    """Returns '{XREF text}.json'; characters illegal in Windows file names (notably ':' in ':RESONANCES') become '_'."""
+    return re.sub(r'[\\/:*?"<>|]', '_', xref_text) + ".json"
+
+
+def find_dataset_file(dataset_code, json_directory, xref_map):
+    """Returns the path of the file {nuclide}_{XREF text}.json that belongs to an XREF letter."""
+    json_name = dataset_json_name(xref_map[dataset_code])
+    for file_name in os.listdir(json_directory):
+        if file_name.partition("_")[2] == json_name:
+            return os.path.join(json_directory, file_name)
+    raise FileNotFoundError(f"No file for XREF {dataset_code} ('{json_name}') in {json_directory}")
 
 
 def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     """
     Main driver: cleans output_dir, matches each .ens file in raw_dir to its XREF dataset letter,
     parses its L records (levels) and G records (gamma transitions), and writes
-    one {nuclide}_{XREF}.json per file to output_dir, plus dataset_index.json (letter -> file name).
+    one {nuclide}_{XREF}.json per file to output_dir.
     """
     xref_map = parse_xref_file(xref_path)
     os.makedirs(output_dir, exist_ok=True)
@@ -820,8 +790,6 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     if not ens_files:
         print(f"No .ens files found in '{raw_dir}'.")
         return
-
-    dataset_index = {}  # dataset letter -> output file name
 
     for ens_filename in ens_files:
         filepath = os.path.join(raw_dir, ens_filename)
@@ -1033,17 +1001,11 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         if gammas_table_list:
             output_data_structure["gammasTable"] = {"gammas": gammas_table_list}
 
-        # NNDC-style name; ':' in ':RESONANCES' and other Windows-illegal characters become '_'
-        safe_xref_text = re.sub(r'[\\/:*?"<>|]', '_', xref_map[letter])
-        output_filename = f"{nuclide_name}_{safe_xref_text}.json"
-        dataset_index[letter] = output_filename
+        output_filename = f"{nuclide_name}_{dataset_json_name(xref_map[letter])}"
         output_path = os.path.join(os.path.abspath(output_dir), output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output_data_structure, f, indent=4)
         print(f"Dataset {letter} saved to {output_path}")
-
-    with open(os.path.join(output_dir, "dataset_index.json"), 'w', encoding='utf-8') as index_file:
-        json.dump(dataset_index, index_file, indent=4)
 
 
 if __name__ == "__main__":

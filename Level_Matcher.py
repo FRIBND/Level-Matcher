@@ -77,7 +77,7 @@ Step 5: Constrained Clustering (Graph Partitioning)
 # User Configuration
 # ==========================================
 # Specify which dataset letters to load for pairwise level matching inference.
-# These letters are resolved to JSON files through dataset_index.json in data/json/ (legacy fixtures: 'L' -> *_dataset_L.json).
+# These letters are the XREF letters of the adopted file (--xref); each one maps to {nuclide}_{XREF text}.json in --json_dir.
 # Letter mapping comes from data/raw/XREF.txt; see the Dataset_Parser.py run log for assignments.
 # Run Dataset_Parser.py first to generate these files from raw .ens inputs.
 # Note: These datasets are real-world inference targets — they are never used
@@ -98,7 +98,8 @@ if __name__ == "__main__":
     # Optional command-line overrides (used by Level_Matcher_GUI.py); defaults preserve the original behavior.
     argument_parser = argparse.ArgumentParser(description="Train the matcher on synthetic data and run pairwise inference.")
     argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to match (default: inference_dataset_labels)")
-    argument_parser.add_argument("--json_dir", default=None, help="Directory with the parsed dataset JSON files and dataset_index.json (default: data/json)")
+    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with the parsed dataset JSON files (default: data/json)")
+    argument_parser.add_argument("--xref", default="data/raw/XREF.txt", help="File with the X records (adopted .ens or XREF.txt) (default: data/raw/XREF.txt)")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory for pairwise/, clustering/, figures/ (default: outputs)")
     command_line_arguments = argument_parser.parse_args()
     if command_line_arguments.labels:
@@ -245,7 +246,7 @@ if __name__ == "__main__":
     # solely for inference; they were never seen during the synthetic training phase.
 
     print("Ingesting Test Data...")
-    levels = parse_json_datasets(inference_dataset_labels, command_line_arguments.json_dir)
+    levels = parse_json_datasets(inference_dataset_labels, command_line_arguments.json_dir, command_line_arguments.xref)
     dataframe = pd.DataFrame(levels)
     dataframe['level_id'] = dataframe.apply(lambda row: f"{row['dataset_code']}_{int(row['energy_value'])}", axis=1)
 
