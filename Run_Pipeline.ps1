@@ -23,12 +23,13 @@
 #   [outputs/figures/*.png]      Final visual results
 #
 # Usage:
-#   Open a PowerShell terminal in the project root, then run:
-#       .\Run_Pipeline.ps1
+#   Open a PowerShell terminal in the project root, then run (letters are the XREF letters of the datasets to match):
+#       .\Run_Pipeline.ps1 -Labels L,Q,F
+#   Optional: -Python <path to python.exe> (default: python from PATH).
 #
 # =============================================================================
 
-$python = "C:\Users\sun\AppData\Local\Programs\Python\Python311\python.exe"
+param([Parameter(Mandatory = $true)][string[]]$Labels, [string]$Python = "python")
 $project_dir = $PSScriptRoot
 $log_file = Join-Path $project_dir "outputs\run_log.txt"
 
@@ -66,7 +67,7 @@ if (Test-Path $error_log_file) { Remove-Item $error_log_file -Force }
 
 $process_arguments = @{
     FilePath               = $python
-    ArgumentList           = "Level_Matcher.py"
+    ArgumentList           = @("Level_Matcher.py", "--labels") + $Labels + @("--json_dir", "data/json", "--xref", "data/raw/XREF.txt")
     WorkingDirectory       = $project_dir
     RedirectStandardOutput = $log_file
     RedirectStandardError  = $error_log_file
@@ -129,7 +130,7 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Cyan
 Write-Host " Step 3/3: Combined Visualizer" -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
-& $python "Combined_Visualizer.py"
+& $python "Combined_Visualizer.py" --labels $Labels --json_dir data/json --xref data/raw/XREF.txt
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Combined_Visualizer.py failed with exit code $LASTEXITCODE." -ForegroundColor Red
     exit 1

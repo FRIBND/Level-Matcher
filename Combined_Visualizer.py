@@ -43,8 +43,6 @@ import os
 import re
 import argparse
 
-# Import the inference dataset list from the single source of truth (Level_Matcher.py user configuration)
-from Level_Matcher import inference_dataset_labels
 from Dataset_Parser import find_dataset_file, parse_xref_file
 
 # Tunable level scheme layout knobs (bars and arrows are drawn to the true energy scale)
@@ -121,15 +119,12 @@ def load_dataset(dataset_code, json_directory, xref_map):
             return data, []
     return [], []
 
-def plot_level_schemes(datasets=None, json_directory='data/json', xref_path='data/raw/XREF.txt', output_file='outputs/figures/Input_Level_Scheme.png'):
-    """Render inference datasets on one shared energy axis: level bars and gamma arrows only.
+def plot_level_schemes(datasets, json_directory, xref_path, output_file):
+    """Render the selected datasets (XREF letters) on one shared energy axis: level bars and gamma arrows only.
 
     Bars and arrows are drawn to the true energy scale with no per-level text labels,
-    so datasets of any density remain directly comparable across columns. The dataset
-    list is imported from Level_Matcher.py so this visualizer always renders exactly
-    the datasets that were selected for inference.
+    so datasets of any density remain directly comparable across columns.
     """
-    datasets = datasets or inference_dataset_labels
     xref_map = parse_xref_file(xref_path)
     dataset_contents = {code: load_dataset(code, json_directory, xref_map) for code in datasets}
 
@@ -346,9 +341,9 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
 
 if __name__ == "__main__":
     argument_parser = argparse.ArgumentParser(description="Render level scheme and clustering figures.")
-    argument_parser.add_argument("--labels", nargs="+", default=None, help="Dataset letters to draw (default: inference_dataset_labels)")
-    argument_parser.add_argument("--json_dir", default="data/json", help="Directory with the parsed dataset JSON files")
-    argument_parser.add_argument("--xref", default="data/raw/XREF.txt", help="File with the X records (adopted .ens or XREF.txt)")
+    argument_parser.add_argument("--labels", nargs="+", required=True, help="XREF letters of the datasets to draw")
+    argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
+    argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
     argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
     command_line_arguments = argument_parser.parse_args()
     figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')
