@@ -21,7 +21,7 @@ Workflow Diagram:
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
             |
             v
-  [User selects two or more datasets]      [Parameters dialog: scoring, thresholds, figure layout]
+  [User selects two or more datasets]      [Parameters dialog: feature engineering, level matcher]
             |                                          |
             +------------------+-----------------------+
                                |
@@ -29,7 +29,7 @@ Workflow Diagram:
                       [Run Level Matcher]  (saves outputs/parameters.json)
                                |
                                v
-  Level_Matcher.py --> Combined_Visualizer.py (subprocesses, --parameters) --> [<workspace parent>/outputs/]
+  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (subprocesses) --> [<workspace parent>/outputs/]
             |
             v
   [Live log panel]
@@ -41,11 +41,12 @@ Numbered Technical Steps:
    (created if missing, existing files deleted first); the parser log
    builds the dataset list.
 3. Selection: at least two datasets are required for cross-dataset matching.
-4. Parameters: the dialog has an input box for each parameter at the top of Level_Matcher.py, Feature_Engineer.py and
-   Combined_Visualizer.py (defaults are read from those files; values are range-checked; pointing at a box shows what the
-   parameter does). Changed values are saved in settings.json.
-5. Run: matcher and visualizer run as subprocesses so training never freezes the window; every run passes all parameter values
-   with --parameters (saved as outputs/parameters.json) and streams its output to the log.
+4. Parameters: the dialog has an input box for each scoring parameter at the top of Feature_Engineer.py (listed first) and for
+   each threshold at the top of Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
+   box shows what the parameter does). Figure layout and fonts are not in the dialog (edit the top of Combined_Visualizer.py).
+   Changed values are saved in settings.json.
+5. Run: matcher and visualizer run as subprocesses so training never freezes the window; the matcher receives all parameter
+   values with --parameters (saved as outputs/parameters.json) and every run streams its output to the log.
 6. Results: reports and figures are written to <workspace parent>/outputs.
 
 Architecture:
@@ -54,7 +55,9 @@ Architecture:
   workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Run Level Matcher), log, footer (status text | small FRIB logo).
   The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
 - `read_script_defaults`: Reads parameter defaults from the top of the scripts without importing them.
-- `open_parameter_dialog`: Tabbed input boxes (Matching, Figures) with validation and Reset to Defaults.
+- `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | parameter | value | default. Feature engineering
+  parameters come first, then level matcher parameters. It opens beside the main window with the same height and top edge; a
+  scrollbar appears only when the rows do not fit that height. Has validation and Reset to Defaults.
 - `save_settings`: Writes the last workspace and the changed parameter values to settings.json.
 - `browse_workspace`: Folder chooser; triggers the scan.
 - `scan_workspace`: Starts the parser subprocess and populates the dataset list.
@@ -77,30 +80,13 @@ from tkinter import filedialog, font as tkfont, messagebox, ttk
 project_directory = os.path.dirname(os.path.abspath(__file__))
 
 # Parameters of the Parameters dialog. Row = (key path, label, kind, minimum, maximum, meaning); kind is float, int, bool or a tuple of choices.
-# Default values are read from the top of Level_Matcher.py, Feature_Engineer.py and Combined_Visualizer.py (the scripts stay the source).
-parameter_tabs = [
-    ("Matching", [
-        [("Thresholds", [
-            ("pairwise_output_threshold", "Pair report minimum probability", float, 0.0, 1.0,
-             "Pairs with a lower match probability are left out of the pair report and the clustering."),
-            ("clustering_merge_threshold", "Cluster merge minimum probability", float, 0.0, 1.0,
-             "Two levels join one cluster only if their match probability is at least this value (pairs below the pair report minimum are never considered).")]),
-         ("Energy", [
+# Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults.
+parameter_sections = [
+    ("Feature engineering", [
+        ("Energy", [
             ("Scoring_Config.Energy.Sigma_Scale", "Energy kernel width (larger = stricter)", float, 0.001, 10.0,
              "Energy score = exp(-value x z^2), z = energy difference in combined uncertainties. Larger is stricter.")]),
-         ("Ambiguous spin-parity penalty", [
-            ("Scoring_Config.Specificity.Formula", "Formula", ("sqrt", "linear", "log", "tunable"), None, None,
-             "Penalty for n = options of level 1 x options of level 2: sqrt = 1/sqrt(n), linear = 1/n, log = 1/(1+log10 n), tunable uses Alpha."),
-            ("Scoring_Config.Specificity.Alpha", "Alpha (tunable formula only)", float, 0.0, 100.0,
-             "Tunable penalty = 1/(1 + Alpha x (n - 1)); higher is stricter.")]),
-         ("Missing data and veto", [
-            ("Scoring_Config.General.Neutral_Remap_Factor", "Missing-data score (0.5 to 1)", float, 0.5, 1.0,
-             "Training rule: replaces 'unknown' (0.5) when spin, parity or gamma data are missing; higher is a milder penalty."),
-            ("Scoring_Config.Label.Spin_Veto_Max", "Spin veto (reject if score is at most)", float, 0.0, 1.0,
-             "Training rule: a spin score at or below this value gives match probability 0, whatever the other scores are."),
-            ("Scoring_Config.Label.Parity_Veto_Max", "Parity veto (reject if score is at most)", float, 0.0, 1.0,
-             "Training rule: a parity score at or below this value gives match probability 0, whatever the other scores are.")])],
-        [("Spin similarity", [
+        ("Spin similarity", [
             ("Scoring_Config.Spin.Match_Firm", "Same J, both firm", float, 0.0, 1.0,
              "Spin score when J is the same and both assignments are firm."),
             ("Scoring_Config.Spin.Match_Strong", "Same J, any tentative", float, 0.0, 1.0,
@@ -111,7 +97,7 @@ parameter_tabs = [
              "Spin score when J differs by 1 and both assignments are firm."),
             ("Scoring_Config.Spin.Mismatch_Firm", "J differs by 2 or more", float, 0.0, 1.0,
              "Spin score when J differs by 2 or more.")]),
-         ("Parity similarity", [
+        ("Parity similarity", [
             ("Scoring_Config.Parity.Match_Firm", "Same parity, both firm", float, 0.0, 1.0,
              "Parity score when the parity is the same and both assignments are firm."),
             ("Scoring_Config.Parity.Match_Strong", "Same parity, any tentative", float, 0.0, 1.0,
@@ -120,60 +106,40 @@ parameter_tabs = [
              "Parity score when the parity is opposite and an assignment is tentative."),
             ("Scoring_Config.Parity.Mismatch_Firm", "Opposite parity, both firm", float, 0.0, 1.0,
              "Parity score when the parity is opposite and both assignments are firm.")]),
-         ("Energy rescue by spin, parity and gamma agreement", [
+        ("Spin-parity ambiguity", [
+            ("Scoring_Config.Specificity.Formula", "Formula", ("sqrt", "linear", "log", "tunable"), None, None,
+             "Penalty for n = options of level 1 x options of level 2: sqrt = 1/sqrt(n), linear = 1/n, log = 1/(1+log10 n), tunable uses Alpha."),
+            ("Scoring_Config.Specificity.Alpha", "Alpha (tunable formula only)", float, 0.0, 100.0,
+             "Tunable penalty = 1/(1 + Alpha x (n - 1)); higher is stricter.")]),
+        ("Missing data, veto", [
+            ("Scoring_Config.General.Neutral_Remap_Factor", "Missing-data score (0.5 to 1)", float, 0.5, 1.0,
+             "Training rule: replaces 'unknown' (0.5) when spin, parity or gamma data are missing; higher is a milder penalty."),
+            ("Scoring_Config.Label.Spin_Veto_Max", "Spin veto (reject if score is at most)", float, 0.0, 1.0,
+             "Training rule: a spin score at or below this value gives match probability 0, whatever the other scores are."),
+            ("Scoring_Config.Label.Parity_Veto_Max", "Parity veto (reject if score is at most)", float, 0.0, 1.0,
+             "Training rule: a parity score at or below this value gives match probability 0, whatever the other scores are.")]),
+        ("Energy rescue", [
             ("Scoring_Config.Feature_Correlation.Enabled", "Enabled", bool, None, None,
              "Training rule: softens the energy penalty when spin and parity, or the gamma pattern, agree strongly (likely calibration offset)."),
             ("Scoring_Config.Feature_Correlation.Rescue_Threshold", "Score that triggers rescue", float, 0.0, 1.0,
              "Training rule: rescue triggers when the spin and parity scores, or the gamma score, reach this value."),
             ("Scoring_Config.Feature_Correlation.Rescue_Exponent", "Energy boost exponent (1 = none)", float, 0.1, 1.0,
-             "Training rule: on rescue the energy score is raised to this power; 0.5 is a strong boost, 1 is none.")])]]),
-    ("Figures", [
-        [("Level scheme", [
-            ("level_scheme_column_spacing", "Column spacing", float, 0.5, 20.0,
-             "Horizontal distance between dataset columns."),
-            ("level_scheme_bar_width", "Level bar width", float, 0.2, 20.0,
-             "Length of each level bar; gamma arrows spread within it."),
-            ("level_scheme_maximum_arrows", "Gamma arrows per dataset", int, 0, 1000,
-             "Number of strongest gamma transitions drawn per dataset."),
-            ("level_scheme_figure_height_inches", "Figure height (inches)", float, 2.0, 60.0,
-             "Figure height; all datasets share one energy axis.")]),
-         ("Cluster table", [
-            ("clustering_box_padding", "Text box padding", float, 0.0, 10.0,
-             "Padding inside each cluster text box."),
-            ("clustering_minimum_distance", "Minimum label spacing (keV)", int, 0, 100000,
-             "Smallest vertical gap between cluster text blocks, so labels do not overlap."),
-            ("clustering_figure_height_multiplier", "Figure height per cluster (inches)", float, 0.05, 10.0,
-             "Figure height per cluster (at least 8 inches in total)."),
-            ("clustering_figure_width_inches", "Figure width (inches)", float, 2.0, 60.0,
-             "Width of the cluster figure."),
-            ("clustering_x_spacing", "Dataset column spacing", float, 0.05, 10.0,
-             "Horizontal distance between dataset columns in the cluster figure."),
-            ("clustering_x_axis_margin", "Horizontal margin", float, 0.0, 10.0,
-             "Empty space left and right of the dataset columns.")])],
-        [("Font sizes", [
-            ("Font_Config.axis_labels", "Level scheme axis labels", int, 4, 72,
-             "Font size of the axis labels in the level scheme."),
-            ("Font_Config.tick_labels", "Level scheme tick values", int, 4, 72,
-             "Font size of the axis tick values in the level scheme."),
-            ("Font_Config.title", "Level scheme title", int, 4, 72,
-             "Font size of the level scheme title."),
-            ("Font_Config.cluster_text", "Cluster text", int, 4, 72,
-             "Font size of the text inside the cluster boxes."),
-            ("Font_Config.cluster_axis_labels", "Cluster axis labels", int, 4, 72,
-             "Font size of the axis labels in the cluster figure."),
-            ("Font_Config.cluster_tick_labels", "Cluster tick values", int, 4, 72,
-             "Font size of the axis tick values in the cluster figure."),
-            ("Font_Config.cluster_title", "Cluster title", int, 4, 72,
-             "Font size of the cluster figure title.")])]]),
+             "Training rule: on rescue the energy score is raised to this power; 0.5 is a strong boost, 1 is none.")])]),
+    ("Level matcher", [
+        ("Thresholds", [
+            ("pairwise_output_threshold", "Pair report minimum probability", float, 0.0, 1.0,
+             "Pairs with a lower match probability are left out of the pair report and the clustering."),
+            ("clustering_merge_threshold", "Cluster merge minimum probability", float, 0.0, 1.0,
+             "Two levels join one cluster only if their match probability is at least this value (pairs below the pair report minimum are never considered).")])]),
 ]
-parameter_rows = {row[0]: row for _, columns in parameter_tabs for groups in columns for _, rows in groups for row in rows}
+parameter_rows = {row[0]: row for _, groups in parameter_sections for _, rows in groups for row in rows}
 
 
 def read_script_defaults(key_paths):
     """Reads the default of every key path (for example Scoring_Config.Energy.Sigma_Scale) from the top of the scripts without importing them."""
     top_level_names = {key_path.split(".")[0] for key_path in key_paths}
     top_level_values = {}
-    for script_name in ("Level_Matcher.py", "Feature_Engineer.py", "Combined_Visualizer.py"):
+    for script_name in ("Level_Matcher.py", "Feature_Engineer.py"):
         with open(os.path.join(project_directory, script_name), "r", encoding="utf-8") as script_file:
             for node in ast.parse(script_file.read()).body:
                 if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id in top_level_names:
@@ -193,7 +159,7 @@ class Level_Matcher_Interface:
         root_window.title("Level Matcher")
         # Pixel sizes are multiplied by the display scale (1.0 at 96 dpi, 2.0 on a 200% display)
         display_scale = root_window.winfo_fpixels("1i") / 96
-        window_width = min(int(900 * display_scale), root_window.winfo_screenwidth() - 40)
+        window_width = min(int(840 * display_scale), root_window.winfo_screenwidth() - 40)
         window_height = min(int(720 * display_scale), root_window.winfo_screenheight() - 100)
         root_window.geometry(f"{window_width}x{window_height}")
         root_window.minsize(int(700 * display_scale), int(520 * display_scale))
@@ -251,7 +217,7 @@ class Level_Matcher_Interface:
         workspace_frame.pack(fill="x", padx=10, pady=(10, 5))
         self.workspace_variable = tk.StringVar()
         ttk.Entry(workspace_frame, textvariable=self.workspace_variable, font=self.monospace_font).pack(side="left", fill="x", expand=True, padx=5, pady=5)
-        ttk.Button(workspace_frame, text="Browse...", command=self.browse_workspace).pack(side="left", padx=5, pady=5)
+        ttk.Button(workspace_frame, text="Browse", command=self.browse_workspace).pack(side="left", padx=5, pady=5)
 
         # 2. Dataset selection table: Letter | XREF reaction | data file
         dataset_frame = ttk.LabelFrame(root_window, text="Select datasets to match levels (Ctrl or Shift for multiple)")
@@ -278,7 +244,7 @@ class Level_Matcher_Interface:
                    command=lambda: self.dataset_table.selection_remove(self.dataset_table.selection())).pack(side="left", padx=(5, 0))
         self.run_button = ttk.Button(action_frame, text="Run Level Matcher", command=self.run_matcher)
         self.run_button.pack(side="right", padx=(0, 25))
-        ttk.Button(action_frame, text="Parameters...", command=self.open_parameter_dialog).pack(side="right", padx=(0, 5))
+        ttk.Button(action_frame, text="Parameters", command=self.open_parameter_dialog).pack(side="right", padx=(0, 5))
 
         # 4. Log panel
         log_frame = ttk.LabelFrame(root_window, text="Log")
@@ -332,50 +298,63 @@ class Level_Matcher_Interface:
             json.dump(self.settings, settings_file, indent=4)
 
     def open_parameter_dialog(self):
-        """Input boxes for the parameters at the top of the scripts; OK validates, saves and uses them from the next run."""
+        """One fixed-size panel with every parameter (feature engineering first, then level matcher); OK validates, saves and uses them from the next run."""
+        display_scale = self.root_window.winfo_fpixels("1i") / 96
+        menu_family = tkfont.nametofont("TkDefaultFont").actual("family")
+        group_font, section_font = (menu_family, 10, "bold"), (menu_family, 11, "bold")
         dialog = tk.Toplevel(self.root_window)
         dialog.title("Parameters")
         dialog.transient(self.root_window)
-        dialog.resizable(False, False)
-        dialog.geometry(f"+{self.root_window.winfo_rootx() + 40}+{self.root_window.winfo_rooty() + 40}")
-        notebook = ttk.Notebook(dialog)
-        notebook.pack(fill="both", expand=True, padx=10, pady=(10, 5))
+        container = ttk.Frame(dialog)
+        container.pack(fill="both", expand=True, padx=14, pady=(10, 0))
+        canvas = tk.Canvas(container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        inner = ttk.Frame(canvas)
+        canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
         help_variable = tk.StringVar(value="Point at a parameter to see what it does.")
-        tk.Label(dialog, textvariable=help_variable, anchor="nw", justify="left", height=2,
-                 wraplength=int(1000 * self.root_window.winfo_fpixels("1i") / 96)).pack(fill="x", padx=14)
+        help_label = tk.Label(dialog, textvariable=help_variable, anchor="nw", justify="left", height=3)
+        help_label.pack(fill="x", padx=14, pady=(8, 4))
+
+        # Rows: group | parameter | value | default; the group name stands on the first row of its group
         variables = {}
-        for tab_title, columns in parameter_tabs:
-            page = ttk.Frame(notebook, padding=8)
-            notebook.add(page, text=tab_title)
-            for column_index, groups in enumerate(columns):
-                column_frame = ttk.Frame(page)
-                column_frame.grid(row=0, column=column_index, sticky="n", padx=6)
-                label_width = max(len(row[1]) for _, rows in groups for row in rows)  # aligns the input boxes of all groups in a column
-                for group_title, rows in groups:
-                    group_frame = ttk.LabelFrame(column_frame, text=group_title)
-                    group_frame.pack(fill="x", pady=4)
-                    for row_index, (key_path, label, kind, minimum, maximum, meaning) in enumerate(rows):
-                        label_widget = ttk.Label(group_frame, text=label, width=label_width)
-                        label_widget.grid(row=row_index, column=0, sticky="w", padx=6, pady=2)
-                        current_value = self.parameter_values[key_path]
-                        if kind is bool:
-                            variables[key_path] = tk.BooleanVar(value=current_value)
-                            input_widget = ttk.Checkbutton(group_frame, variable=variables[key_path])
-                            valid_range = ""
-                        elif isinstance(kind, tuple):
-                            variables[key_path] = tk.StringVar(value=current_value)
-                            input_widget = ttk.Combobox(group_frame, textvariable=variables[key_path], values=kind, state="readonly", width=9)
-                            valid_range = f" Choices: {', '.join(kind)}."
-                        else:
-                            variables[key_path] = tk.StringVar(value=str(current_value))
-                            input_widget = ttk.Entry(group_frame, textvariable=variables[key_path], width=9, font=self.monospace_font)
-                            valid_range = f" Range {minimum} to {maximum}."
-                        input_widget.grid(row=row_index, column=1, sticky="w", padx=6)
-                        default_widget = ttk.Label(group_frame, text=f"default {self.parameter_defaults[key_path]}", foreground="gray")
-                        default_widget.grid(row=row_index, column=2, sticky="w", padx=6)
-                        # The meaning of a parameter appears in the help line under the tabs
-                        for widget, event_name in ((label_widget, "<Enter>"), (input_widget, "<Enter>"), (default_widget, "<Enter>"), (input_widget, "<FocusIn>")):
-                            widget.bind(event_name, lambda event, text=f"{key_path}: {meaning}{valid_range}": help_variable.set(text))
+        grid_row = 0
+        for section_index, (section_title, groups) in enumerate(parameter_sections):
+            ttk.Label(inner, text=section_title, font=section_font).grid(row=grid_row, column=0, columnspan=2, sticky="sw", pady=(12 if section_index else 0, 2))
+            if section_index == 0:  # the Value and Default headings stand once, in the first section heading row
+                for column_index, header_text in ((2, "Value"), (3, "Default")):
+                    ttk.Label(inner, text=header_text, font=group_font).grid(row=grid_row, column=column_index, sticky="sw", padx=8, pady=(0, 2))
+            ttk.Separator(inner, orient="horizontal").grid(row=grid_row + 1, column=0, columnspan=4, sticky="ew", pady=(0, 2))
+            grid_row += 2
+            for group_index, (group_title, rows) in enumerate(groups):
+                for row_in_group, (key_path, label, kind, minimum, maximum, meaning) in enumerate(rows):
+                    row_padding = (8 if row_in_group == 0 and group_index > 0 else 2, 2)
+                    if row_in_group == 0:
+                        ttk.Label(inner, text=group_title, font=group_font).grid(row=grid_row, column=0, sticky="w", padx=(0, 8), pady=row_padding)
+                    label_widget = ttk.Label(inner, text=label)
+                    label_widget.grid(row=grid_row, column=1, sticky="w", padx=8, pady=row_padding)
+                    current_value = self.parameter_values[key_path]
+                    if kind is bool:
+                        variables[key_path] = tk.BooleanVar(value=current_value)
+                        input_widget = ttk.Checkbutton(inner, variable=variables[key_path])
+                        valid_range = ""
+                    elif isinstance(kind, tuple):
+                        variables[key_path] = tk.StringVar(value=current_value)
+                        input_widget = ttk.Combobox(inner, textvariable=variables[key_path], values=kind, state="readonly", width=8)
+                        valid_range = f" Choices: {', '.join(kind)}."
+                    else:
+                        variables[key_path] = tk.StringVar(value=str(current_value))
+                        input_widget = ttk.Entry(inner, textvariable=variables[key_path], width=9, font=self.monospace_font)
+                        valid_range = f" Range {minimum} to {maximum}."
+                    input_widget.grid(row=grid_row, column=2, sticky="w", padx=8, pady=row_padding)
+                    default_widget = ttk.Label(inner, text=str(self.parameter_defaults[key_path]), foreground="gray")
+                    default_widget.grid(row=grid_row, column=3, sticky="w", padx=8, pady=row_padding)
+                    # The meaning of a parameter appears in the help line under the list
+                    for widget, event_name in ((label_widget, "<Enter>"), (input_widget, "<Enter>"), (default_widget, "<Enter>"), (input_widget, "<FocusIn>")):
+                        widget.bind(event_name, lambda event, text=f"{key_path}: {meaning}{valid_range}": help_variable.set(text))
+                    grid_row += 1
 
         def reset_to_defaults():
             for key_path, variable in variables.items():
@@ -405,10 +384,37 @@ class Level_Matcher_Interface:
             dialog.destroy()
 
         button_frame = ttk.Frame(dialog)
-        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        button_frame.pack(fill="x", padx=14, pady=(4, 12))
+        ttk.Button(button_frame, text="OK", command=apply_parameters).pack(side="left")
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side="left", padx=5)
         ttk.Button(button_frame, text="Reset to Defaults", command=reset_to_defaults).pack(side="left")
-        ttk.Button(button_frame, text="OK", command=apply_parameters).pack(side="right")
-        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side="right", padx=(0, 5))
+
+        # Same height as the main window so both line up; a scrollbar appears only when the rows do not fit that height
+        inner.update_idletasks()
+        canvas.configure(width=inner.winfo_reqwidth(), height=inner.winfo_reqheight())
+        dialog.update_idletasks()
+        dialog_height = self.root_window.winfo_height()
+        canvas_height = dialog_height - (dialog.winfo_reqheight() - inner.winfo_reqheight())
+        if canvas_height < inner.winfo_reqheight():
+            scrollbar.pack(side="right", fill="y")
+            dialog.bind("<MouseWheel>", lambda event: canvas.yview_scroll(-int(event.delta / 120), "units"))
+        canvas.configure(height=canvas_height)
+        dialog.update_idletasks()
+        dialog_width = dialog.winfo_reqwidth()
+        help_label.configure(wraplength=dialog_width - int(30 * display_scale))
+        # Beside the main window (right, else left) with the top edges aligned, so both stay visible
+        gap = int(8 * display_scale)
+        screen_width = dialog.winfo_screenwidth()
+        main_left = self.root_window.winfo_rootx()
+        main_right = main_left + self.root_window.winfo_width()
+        if main_right + gap + dialog_width <= screen_width:
+            dialog_left = main_right + gap
+        elif main_left - gap - dialog_width >= 0:
+            dialog_left = main_left - gap - dialog_width
+        else:
+            dialog_left = screen_width - dialog_width
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{dialog_left}+{self.root_window.winfo_y()}")
+        dialog.resizable(False, False)
         dialog.bind("<Escape>", lambda event: dialog.destroy())
         dialog.grab_set()
 
@@ -518,10 +524,9 @@ class Level_Matcher_Interface:
         shared_arguments = ["--labels", *selected_letters,
                             "--xref", self.xref_path,
                             "--json_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json"),
-                            "--output_dir", outputs_directory,
-                            "--parameters", parameters_path]
+                            "--output_dir", outputs_directory]
         commands = [
-            [sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments],
+            [sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path],
             [sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments],
         ]
         self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
