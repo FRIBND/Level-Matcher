@@ -30,7 +30,7 @@ Workflow Diagram:
                       [Run Level Matcher]  (saves level_matcher_files/parameters.json)
                                |
                                v
-  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (only if Generate figures is ticked) --> [<workspace parent>/raw/level_matcher_files/]
+  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (unless Generate figures is unticked) --> [<workspace parent>/raw/level_matcher_files/]
             |
             v
   [Live log panel]
@@ -44,18 +44,18 @@ Numbered Technical Steps:
 3. Selection: at least two datasets are required for cross-dataset matching.
 4. Parameters: the dialog has an input box for each scoring parameter at the top of Feature_Engineer.py (listed first) and for
    each threshold at the top of Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
-   box shows what the parameter does). Figure layout and fonts are not in the dialog (edit the top of Combined_Visualizer.py).
-   Changed values are saved in settings.json.
+   box shows what the parameter does), plus the Generate figures option (on by default; its default is set in this file).
+   Figure layout and fonts are not in the dialog (edit the top of Combined_Visualizer.py). Changed values are saved in settings.json.
 5. Run: matcher and visualizer run as subprocesses so training never freezes the window; the matcher receives all parameter
    values with --parameters (saved as level_matcher_files/parameters.json) and every run streams its output to the log.
-   The Generate figures checkbox (off by default, remembered in settings.json) adds --figures for the matcher and runs
-   Combined_Visualizer.py afterwards; without it no PNG file is written.
+   Unless Generate figures is unticked in the Parameters dialog, --figures is added for the matcher and Combined_Visualizer.py
+   runs afterwards; when unticked no PNG file is written.
 6. Results: the pair report and the cluster report (plus the PNG figures when enabled) are written to the same level_matcher_files folder.
 
 Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
   for the entry, dataset table rows and log; DPI aware, so pixel sizes follow the Windows display scale). Layout top to bottom:
-  workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Generate figures, Run Level Matcher), log, footer (status text | small FRIB logo).
+  workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Run Level Matcher), log, footer (status text | small FRIB logo).
   The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
 - `read_script_defaults`: Reads parameter defaults from the top of the scripts without importing them.
 - `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | parameter | value | default. Feature engineering
@@ -84,9 +84,10 @@ project_directory = os.path.dirname(os.path.abspath(__file__))
 output_folder_name = "level_matcher_files"  # Created in the raw folder beside the workspace folder, never inside it; holds every file the tool writes (no subfolders)
 
 # Parameters of the Parameters dialog. Row = (key path, label, kind, minimum, maximum, meaning); kind is float, int, bool or a tuple of choices.
-# Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults.
+# Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults
+# (except the options in interface_option_defaults below).
 parameter_sections = [
-    ("Feature engineering", [
+    ("Feature Engineering", [
         ("Energy", [
             ("Scoring_Config.Energy.Sigma_Scale", "Energy kernel width (larger = stricter)", float, 0.001, 10.0,
              "Energy score = exp(-value x z^2), z = energy difference in combined uncertainties. Larger is stricter.")]),
@@ -129,14 +130,19 @@ parameter_sections = [
              "Training rule: rescue triggers when the spin and parity scores, or the gamma score, reach this value."),
             ("Scoring_Config.Feature_Correlation.Rescue_Exponent", "Energy boost exponent (1 = none)", float, 0.1, 1.0,
              "Training rule: on rescue the energy score is raised to this power; 0.5 is a strong boost, 1 is none.")])]),
-    ("Level matcher", [
+    ("Level Matcher", [
         ("Thresholds", [
             ("pairwise_output_threshold", "Pair report minimum probability", float, 0.0, 1.0,
              "Pairs with a lower match probability are left out of the pair report and the clustering."),
             ("clustering_merge_threshold", "Cluster merge minimum probability", float, 0.0, 1.0,
-             "Two levels join one cluster only if their match probability is at least this value (pairs below the pair report minimum are never considered).")])]),
+             "Two levels join one cluster only if their match probability is at least this value (pairs below the pair report minimum are never considered).")]),
+        ("Output", [
+            ("generate_figures", "Generate figures", bool, None, None,
+             "Writes the PNG figures (level schemes, cluster table, training diagnostics) next to the results; they can be several megabytes. Untick to skip them.")])]),
 ]
 parameter_rows = {row[0]: row for _, groups in parameter_sections for _, rows in groups for row in rows}
+# Options owned by the interface itself: they appear in the dialog like parameters but are not variables of the scripts
+interface_option_defaults = {"generate_figures": True}
 
 
 def read_script_defaults(key_paths):
@@ -164,8 +170,9 @@ class Level_Matcher_Interface:
         # Pixel sizes are multiplied by the display scale (1.0 at 96 dpi, 2.0 on a 200% display)
         display_scale = root_window.winfo_fpixels("1i") / 96
         window_width = min(int(840 * display_scale), root_window.winfo_screenwidth() - 40)
-        window_height = min(int(720 * display_scale), root_window.winfo_screenheight() - 100)
-        root_window.geometry(f"{window_width}x{window_height}")
+        window_height = min(int(750 * display_scale), root_window.winfo_screenheight() - int(100 * display_scale))
+        # Top-left corner: this window and the Parameters dialog beside it (same height) then stay fully on the screen
+        root_window.geometry(f"{window_width}x{window_height}+{int(20 * display_scale)}+{int(10 * display_scale)}")
         root_window.minsize(int(700 * display_scale), int(520 * display_scale))
 
         # Menus, labels, buttons and table headings use Arial; text inside boxes (entry, table rows, log) uses one monospaced family
@@ -192,7 +199,7 @@ class Level_Matcher_Interface:
         self.dataset_records = []  # One dictionary per detected dataset: letter, filename, reaction
         self.xref_path = ""
 
-        # Settings remembered between sessions: last workspace folder, figure option and the parameter values changed from the defaults
+        # Settings remembered between sessions: last workspace folder and the parameter values changed from the defaults
         self.settings_path = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Level_Matcher", "settings.json")
         try:
             with open(self.settings_path, "r", encoding="utf-8") as settings_file:
@@ -200,8 +207,8 @@ class Level_Matcher_Interface:
         except (OSError, ValueError):
             self.settings = {}
         last_workspace = self.settings.get("last_workspace", "")
-        self.figures_variable = tk.BooleanVar(value=bool(self.settings.get("generate_figures", False)))
-        self.parameter_defaults = read_script_defaults(list(parameter_rows))
+        script_key_paths = [key_path for key_path in parameter_rows if key_path not in interface_option_defaults]
+        self.parameter_defaults = {**read_script_defaults(script_key_paths), **interface_option_defaults}
         saved_parameters = self.settings.get("parameters", {})
         self.parameter_values = {key_path: saved_parameters.get(key_path, default) for key_path, default in self.parameter_defaults.items()}
 
@@ -250,7 +257,6 @@ class Level_Matcher_Interface:
                    command=lambda: self.dataset_table.selection_remove(self.dataset_table.selection())).pack(side="left", padx=(5, 0))
         self.run_button = ttk.Button(action_frame, text="Run Level Matcher", command=self.run_matcher)
         self.run_button.pack(side="right", padx=(0, 25))
-        ttk.Checkbutton(action_frame, text="Generate figures", variable=self.figures_variable, command=self.save_settings).pack(side="right", padx=(0, 15))
         ttk.Button(action_frame, text="Parameters", command=self.open_parameter_dialog).pack(side="right", padx=(0, 5))
 
         # 4. Log panel
@@ -309,7 +315,6 @@ class Level_Matcher_Interface:
 
     def save_settings(self):
         self.settings["last_workspace"] = self.workspace_variable.get()
-        self.settings["generate_figures"] = self.figures_variable.get()
         self.settings["parameters"] = {key_path: value for key_path, value in self.parameter_values.items()
                                        if value != self.parameter_defaults[key_path]}
         os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
@@ -545,7 +550,7 @@ class Level_Matcher_Interface:
                             "--json_dir", output_directory,
                             "--output_dir", output_directory]
         commands = [[sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path]]
-        if self.figures_variable.get():
+        if self.parameter_values["generate_figures"]:
             commands[0].append("--figures")
             commands.append([sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments])
         self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
