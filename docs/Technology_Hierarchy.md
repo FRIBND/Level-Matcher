@@ -161,7 +161,7 @@ XGBoost Training Complete (stopped at iteration 540/1000)
 - Iteration count annotations showing convergence efficiency
 - Reference lines for excellent (<0.05 RMSE, <0.3 LogLoss) and poor (>0.3 RMSE, >1.0 LogLoss) performance
 - Feature Importance horizontal bar chart with Gain values sorted descending
-- Output: `outputs/Training_Metrics_Diagnostic.png` (300 DPI publication quality)
+- Output: `level_matcher_files/Training_Metrics_Diagnostic.png` (300 DPI publication quality)
 
 ### Feature Engineering
 

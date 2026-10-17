@@ -31,7 +31,7 @@ Workflow Diagram:
 # 4. Report: file name, location inside the file, and message; exit code 1 if any violation exists.
 #
 # Usage:
-#   python scripts/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\new\\level_matcher_files
+#   python scripts/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\raw\\level_matcher_files
 #   (defaults: --json_dir data/json, --schema_dir data/ensdf_schema_1.0.0, relative to the repository root)
 #
 # Limitation: the schema checks structure and types, not physics (for example, whether a normalized intensity is correct).

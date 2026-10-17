@@ -7,15 +7,16 @@ Level Matcher Graphical Interface
 
 The user picks a workspace folder that holds their own ENSDF .ens files, including the adopted file whose X records list the dataset letters (XREF.txt is the fallback).
 Every file the tool writes (parsed JSON, parameters.json, reports and optional figures) goes into one folder named
-level_matcher_files inside the workspace folder, without subfolders (for example workspace .../S34/new -> .../S34/new/level_matcher_files),
-so the user's .ens files are never modified and the tool never reads from or writes to the tool's own data/raw folder.
+level_matcher_files in the raw folder beside the workspace folder, without subfolders
+(for example workspace .../S34/new -> .../S34/raw/level_matcher_files). Nothing is ever created or changed inside the workspace
+folder itself (it holds the user's .ens files), and the tool never reads from or writes to the tool's own data/raw folder.
 
 Workflow Diagram:
 
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [<workspace>/level_matcher_files/{nuclide}_{XREF}.json]
+  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/raw/level_matcher_files/{nuclide}_{XREF}.json]
             |
             v
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
@@ -29,7 +30,7 @@ Workflow Diagram:
                       [Run Level Matcher]  (saves level_matcher_files/parameters.json)
                                |
                                v
-  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (only if Generate figures is ticked) --> [<workspace>/level_matcher_files/]
+  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (only if Generate figures is ticked) --> [<workspace parent>/raw/level_matcher_files/]
             |
             v
   [Live log panel]
@@ -37,9 +38,9 @@ Workflow Diagram:
 Numbered Technical Steps:
 1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
    The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
-2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside level_matcher_files in the workspace folder
+2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside <workspace parent>/raw/level_matcher_files
    (created if missing; earlier parser output there is deleted first, other files are left alone); the parser log
-   builds the dataset list.
+   builds the dataset list. The workspace folder itself is only read.
 3. Selection: at least two datasets are required for cross-dataset matching.
 4. Parameters: the dialog has an input box for each scoring parameter at the top of Feature_Engineer.py (listed first) and for
    each threshold at the top of Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
@@ -49,7 +50,7 @@ Numbered Technical Steps:
    values with --parameters (saved as level_matcher_files/parameters.json) and every run streams its output to the log.
    The Generate figures checkbox (off by default, remembered in settings.json) adds --figures for the matcher and runs
    Combined_Visualizer.py afterwards; without it no PNG file is written.
-6. Results: the pair report and the cluster report (plus the PNG figures when enabled) are written to level_matcher_files.
+6. Results: the pair report and the cluster report (plus the PNG figures when enabled) are written to the same level_matcher_files folder.
 
 Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
@@ -80,7 +81,7 @@ import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
 project_directory = os.path.dirname(os.path.abspath(__file__))
-output_folder_name = "level_matcher_files"  # Created inside the workspace folder; holds every file the tool writes (no subfolders)
+output_folder_name = "level_matcher_files"  # Created in the raw folder beside the workspace folder, never inside it; holds every file the tool writes (no subfolders)
 
 # Parameters of the Parameters dialog. Row = (key path, label, kind, minimum, maximum, meaning); kind is float, int, bool or a tuple of choices.
 # Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults.
@@ -279,7 +280,7 @@ class Level_Matcher_Interface:
     def set_busy(self, busy):
         self.is_busy = busy
         state = "disabled" if busy else "normal"
-        # Browse starts a scan that rewrites the json folder, so it must not run during a run
+        # Browse starts a scan that rewrites the parsed JSON files, so it must not run during a run
         for button in (self.browse_button, self.run_button):
             button.configure(state=state)
 
@@ -288,7 +289,16 @@ class Level_Matcher_Interface:
         if not workspace_path or not os.path.isdir(workspace_path):
             messagebox.showerror("Workspace", "Select an existing workspace folder first.")
             return None
+        # The tool never writes into the workspace folder: refuse a folder (for example raw or a drive root) whose output folder would lie inside it
+        workspace_absolute = os.path.abspath(workspace_path)
+        if os.path.commonpath([workspace_absolute, os.path.abspath(self.get_output_directory(workspace_path))]) == workspace_absolute:
+            messagebox.showerror("Workspace", "Select the folder that holds the .ens files (not a raw folder or a drive root): the tool never writes into the selected folder.")
+            return None
         return workspace_path
+
+    def get_output_directory(self, workspace_path):
+        """<workspace parent>/raw/level_matcher_files: beside the folder holding the .ens files, never inside it."""
+        return os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "raw", output_folder_name)
 
     def browse_workspace(self):
         chosen_folder = filedialog.askdirectory(title="Select workspace folder", initialdir=self.workspace_variable.get() or None)
@@ -492,7 +502,7 @@ class Level_Matcher_Interface:
         command = [sys.executable, os.path.join(project_directory, "Dataset_Parser.py"),
                    "--raw_dir", workspace_path,
                    "--xref", xref_path,
-                   "--output_dir", os.path.join(workspace_path, output_folder_name)]
+                   "--output_dir", self.get_output_directory(workspace_path)]
         self.status_variable.set("Scanning workspace...")
 
         def finish_scan(succeeded):
@@ -517,7 +527,7 @@ class Level_Matcher_Interface:
             return
 
         # The parameter values of this run are saved next to the results as parameters.json (nested like the script variables)
-        output_directory = os.path.join(workspace_path, output_folder_name)
+        output_directory = self.get_output_directory(workspace_path)
         os.makedirs(output_directory, exist_ok=True)
         nested_parameters = {}
         for key_path, value in self.parameter_values.items():
@@ -541,7 +551,7 @@ class Level_Matcher_Interface:
         self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
 
         def finish_run(succeeded):
-            self.status_variable.set(f"Done. Results are in the {output_folder_name} folder inside the workspace." if succeeded
+            self.status_variable.set(f"Done. Results are in {output_directory}" if succeeded
                                      else "Run failed. See log.")
 
         self.start_subprocess_sequence(commands, finish_run)

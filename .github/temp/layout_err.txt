@@ -1,4 +1,0 @@
-invalid command name "1738846812224poll_log_queue"
-    while executing
-"1738846812224poll_log_queue"
-    ("after" script)

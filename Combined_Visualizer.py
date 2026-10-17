@@ -9,7 +9,7 @@ All input datasets share one vertical energy axis so levels at the same energy
 align horizontally across dataset columns for direct visual comparison.
 
 Workflow Diagram:
-[data/json datasets] --> [load_dataset] --> [Level Bars at True Energies]
+[--json_dir datasets] --> [load_dataset] --> [Level Bars at True Energies]
                                                |
                                                v
                              [Gamma Arrows between Levels]
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     argument_parser.add_argument("--labels", nargs="+", required=True, help="XREF letters of the datasets to draw")
     argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
     argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
-    argument_parser.add_argument("--output_dir", default="outputs", help="Folder holding Output_Clustering_Results_XGBoost.txt; the figures are written there too (default: outputs)")
+    argument_parser.add_argument("--output_dir", default="level_matcher_files", help="Folder holding Output_Clustering_Results_XGBoost.txt; the figures are written there too (default: level_matcher_files)")
     command_line_arguments = argument_parser.parse_args()
 
     print("Combined Visualizer: generating plots...")

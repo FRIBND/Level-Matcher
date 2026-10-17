@@ -15,12 +15,12 @@
 #          |
 #          v
 #   [2. Level Matcher]           Spawned as detached process (heavy ML compute)
-#          | -- logs to --> outputs/run_log.txt (streamed live in terminal)
+#          | -- logs to --> level_matcher_files/run_log.txt (streamed live in terminal)
 #          v
 #   [3. Combined Visualizer]     Runs synchronously after Level Matcher exits
 #          |
 #          v
-#   [outputs/*.png]             Final visual results
+#   [level_matcher_files/*.png]  Final visual results
 #
 # Usage:
 #   Open a PowerShell terminal in the project root, then run (letters are the XREF letters of the datasets to match):
@@ -31,9 +31,11 @@
 
 param([Parameter(Mandatory = $true)][string[]]$Labels, [string]$Python = "python")
 $project_dir = $PSScriptRoot
-$log_file = Join-Path $project_dir "outputs\run_log.txt"
+$log_file = Join-Path $project_dir "level_matcher_files\run_log.txt"
 
 Set-Location $project_dir
+# The log files and every result live in this folder, so it must exist before the log redirection starts
+New-Item -ItemType Directory -Force (Join-Path $project_dir "level_matcher_files") | Out-Null
 
 # -----------------------------------------------------------------------
 # Step 1: Dataset Parser (synchronous — fast and safe in VS Code terminal)
@@ -52,7 +54,7 @@ Write-Host "[OK] Dataset Parser complete." -ForegroundColor Green
 # -----------------------------------------------------------------------
 # Step 2: Level Matcher (detached process — heavy ML compute)
 #         Spawned outside VS Code to prevent terminal freeze.
-#         stdout is redirected to outputs/run_log.txt.
+#         stdout is redirected to level_matcher_files/run_log.txt.
 #         This script streams the log file live so you can monitor progress.
 # -----------------------------------------------------------------------
 Write-Host ""
@@ -61,7 +63,7 @@ Write-Host " Step 2/3: Level Matcher (spawning detached process)" -ForegroundCol
 Write-Host "======================================================" -ForegroundColor Cyan
 
 # Clear previous logs
-$error_log_file = Join-Path $project_dir "outputs\run_error_log.txt"
+$error_log_file = Join-Path $project_dir "level_matcher_files\run_error_log.txt"
 if (Test-Path $log_file) { Remove-Item $log_file -Force }
 if (Test-Path $error_log_file) { Remove-Item $error_log_file -Force }
 
@@ -144,4 +146,4 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host " Pipeline complete. Output files:" -ForegroundColor Green
 Write-Host "======================================================" -ForegroundColor Green
-Get-ChildItem "outputs" -File | Select-Object -Property @{Name="File"; Expression={$_.FullName.Replace($project_dir + "\", "")}}, LastWriteTime | Format-Table -AutoSize
+Get-ChildItem "level_matcher_files" -File | Select-Object -Property @{Name="File"; Expression={$_.FullName.Replace($project_dir + "\", "")}}, LastWriteTime | Format-Table -AutoSize
