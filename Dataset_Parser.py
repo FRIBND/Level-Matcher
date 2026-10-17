@@ -774,16 +774,17 @@ def find_dataset_file(dataset_code, json_directory, xref_map):
 
 def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
     """
-    Main driver: cleans output_dir, matches each .ens file in raw_dir to its XREF dataset letter,
+    Main driver: removes earlier parser output from output_dir, matches each .ens file in raw_dir to its XREF dataset letter,
     parses its L records (levels) and G records (gamma transitions), and writes
     one {nuclide}_{XREF}.json per file to output_dir.
     """
     xref_map = parse_xref_file(xref_path)
     os.makedirs(output_dir, exist_ok=True)
-    # Stale JSON from earlier runs must not survive into this run
+    # Earlier parser output must not survive into this run; files that do not match a parser output name are left alone
+    parser_json_names = {dataset_json_name(xref_text) for xref_text in xref_map.values()}
     for stale_name in os.listdir(output_dir):
         stale_path = os.path.join(output_dir, stale_name)
-        if os.path.isfile(stale_path):
+        if stale_name.partition("_")[2] in parser_json_names and os.path.isfile(stale_path):
             os.remove(stale_path)
 
     ens_files = sorted(filename for filename in os.listdir(raw_dir) if filename.endswith('.ens'))

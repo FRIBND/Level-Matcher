@@ -9,7 +9,7 @@ Workflow Diagram:
 [Input: Training Metrics]
    |
    v
-[Step 1: Data Collection] --> [RMSE, MAE, LogLoss, AUC, Feature Importance]
+[Step 1: Data Collection] --> [RMSE, MAE, LogLoss, Feature Importance]
    |
    v
 [Step 2: Figure Layout] --> [5-Panel Comparison Grid]

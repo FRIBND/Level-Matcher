@@ -38,7 +38,7 @@ Numbered Technical Steps:
 1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
    The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
 2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside the json folder beside the workspace
-   (created if missing, existing files deleted first); the parser log
+   (created if missing; earlier parser output there is deleted first, other files are left alone); the parser log
    builds the dataset list.
 3. Selection: at least two datasets are required for cross-dataset matching.
 4. Parameters: the dialog has an input box for each scoring parameter at the top of Feature_Engineer.py (listed first) and for
@@ -87,16 +87,16 @@ parameter_sections = [
             ("Scoring_Config.Energy.Sigma_Scale", "Energy kernel width (larger = stricter)", float, 0.001, 10.0,
              "Energy score = exp(-value x z^2), z = energy difference in combined uncertainties. Larger is stricter.")]),
         ("Spin similarity", [
-            ("Scoring_Config.Spin.Match_Firm", "Same J, both firm", float, 0.0, 1.0,
-             "Spin score when J is the same and both assignments are firm."),
-            ("Scoring_Config.Spin.Match_Strong", "Same J, any tentative", float, 0.0, 1.0,
-             "Spin score when J is the same but an assignment is tentative."),
-            ("Scoring_Config.Spin.Mismatch_Weak", "J differs by 1, any tentative", float, 0.0, 1.0,
-             "Spin score when J differs by 1 and an assignment is tentative."),
-            ("Scoring_Config.Spin.Mismatch_Strong", "J differs by 1, both firm", float, 0.0, 1.0,
-             "Spin score when J differs by 1 and both assignments are firm."),
-            ("Scoring_Config.Spin.Mismatch_Firm", "J differs by 2 or more", float, 0.0, 1.0,
-             "Spin score when J differs by 2 or more.")]),
+            ("Scoring_Config.Spin.Match_Firm", "Same spin, both firm", float, 0.0, 1.0,
+             "Spin score when the spin is the same and both assignments are firm."),
+            ("Scoring_Config.Spin.Match_Strong", "Same spin, any tentative", float, 0.0, 1.0,
+             "Spin score when the spin is the same but an assignment is tentative."),
+            ("Scoring_Config.Spin.Mismatch_Weak", "Spin differs by 1, any tentative", float, 0.0, 1.0,
+             "Spin score when the spin differs by 1 and an assignment is tentative."),
+            ("Scoring_Config.Spin.Mismatch_Strong", "Spin differs by 1, both firm", float, 0.0, 1.0,
+             "Spin score when the spin differs by 1 and both assignments are firm."),
+            ("Scoring_Config.Spin.Mismatch_Firm", "Spin differs by 2 or more", float, 0.0, 1.0,
+             "Spin score when the spin differs by 2 or more.")]),
         ("Parity similarity", [
             ("Scoring_Config.Parity.Match_Firm", "Same parity, both firm", float, 0.0, 1.0,
              "Parity score when the parity is the same and both assignments are firm."),
@@ -217,7 +217,8 @@ class Level_Matcher_Interface:
         workspace_frame.pack(fill="x", padx=10, pady=(10, 5))
         self.workspace_variable = tk.StringVar()
         ttk.Entry(workspace_frame, textvariable=self.workspace_variable, font=self.monospace_font).pack(side="left", fill="x", expand=True, padx=5, pady=5)
-        ttk.Button(workspace_frame, text="Browse", command=self.browse_workspace).pack(side="left", padx=5, pady=5)
+        self.browse_button = ttk.Button(workspace_frame, text="Browse", command=self.browse_workspace)
+        self.browse_button.pack(side="left", padx=5, pady=5)
 
         # 2. Dataset selection table: Letter | XREF reaction | data file
         dataset_frame = ttk.LabelFrame(root_window, text="Select datasets to match levels (Ctrl or Shift for multiple)")
@@ -273,7 +274,9 @@ class Level_Matcher_Interface:
     def set_busy(self, busy):
         self.is_busy = busy
         state = "disabled" if busy else "normal"
-        self.run_button.configure(state=state)
+        # Browse starts a scan that rewrites the json folder, so it must not run during a run
+        for button in (self.browse_button, self.run_button):
+            button.configure(state=state)
 
     def get_workspace(self):
         workspace_path = self.workspace_variable.get().strip()

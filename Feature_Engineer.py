@@ -357,13 +357,13 @@ def calculate_spin_similarity(spin_parity_list_1, spin_parity_list_2):
       - Keep the BEST (maximum) similarity score across all pairs
       - Rationale: If any option matches well, levels likely identical
       - Example: Level A has J=2, Level B has J=(2,3)
-        → Compare 2 vs 2 (score 0.9, tentative penalty)
+        → Compare 2 vs 2 (score 0.8, tentative penalty)
         → Compare 2 vs 3 (score 0.2, adjacent mismatch)
-        → Return max(0.9, 0.2) = 0.9 (optimistic: assume match)
+        → Return max(0.8, 0.2) = 0.8 (optimistic: assume match)
     
     Scoring Rules:
       - ΔJ = 0 with both firm, e.g., 2 vs 2: Strongest match → score 1.0
-      - ΔJ = 0 with any tentative, e.g., 2 vs (2): Good match with penalty → score 0.9
+      - ΔJ = 0 with any tentative, e.g., 2 vs (2): Good match with penalty → score 0.8
       - ΔJ = 1 with both firm, e.g., 2 vs 3: Strong mismatch → score 0.05
       - ΔJ = 1 with any tentative, e.g., 2 vs (3): Weak mismatch → score 0.2
       - ΔJ ≥ 2: Strong mismatch regardless of tentativeness → score 0.0
@@ -399,7 +399,7 @@ def calculate_spin_similarity(spin_parity_list_1, spin_parity_list_2):
             both_firm = (not spin1_is_tentative) and (not spin2_is_tentative)
             
             # Apply scoring rules based on ΔJ and firmness
-            # ΔJ = 0: Match      → 1.0 (both firm) or 0.9 (any tentative)
+            # ΔJ = 0: Match      → 1.0 (both firm) or 0.8 (any tentative)
             # ΔJ = 1: Adjacent   → 0.05 (both firm) or 0.2 (any tentative)
             # ΔJ ≥ 2: Mismatch  → 0.0 always
             
@@ -453,9 +453,9 @@ def calculate_parity_similarity(spin_parity_list_1, spin_parity_list_2):
     
     Scoring Rules:
       - Same parity with both firm, e.g., + vs +: Strongest match → score 1.0
-      - Same parity with any tentative, e.g., + vs (+): Good match with penalty → score 0.9
+      - Same parity with any tentative, e.g., + vs (+): Good match with penalty → score 0.8
       - Different parity with both firm, e.g., + vs -: Strong mismatch → score 0.0
-      - Different parity with any tentative, e.g., + vs (-): Weak mismatch → score 0.1
+      - Different parity with any tentative, e.g., + vs (-): Weak mismatch → score 0.05
     """
     # Guard: If either level has no spin/parity data, return neutral score (cannot compare)
     if not spin_parity_list_1 or not spin_parity_list_2:
@@ -488,8 +488,8 @@ def calculate_parity_similarity(spin_parity_list_1, spin_parity_list_2):
             both_firm = (not is_tentative_1) and (not is_tentative_2)
             
             # Apply scoring rules based on match/mismatch and firmness
-            # Match:    → 1.0 (both firm) or 0.9 (any tentative)
-            # Mismatch: → 0.0 (both firm) or 0.1 (any tentative)
+            # Match:    → 1.0 (both firm) or 0.8 (any tentative)
+            # Mismatch: → 0.0 (both firm) or 0.05 (any tentative)
             
             if parities_match:
                 # Same parity → evidence for same level
@@ -730,8 +730,7 @@ def extract_features(level_1, level_2):
     
     1. Energy_Similarity (0-1):
        - Gaussian kernel: exp(-Sigma_Scale × z²) where z = ΔE/σ_combined
-       - Sigma_Scale from Scoring_Config['Energy']['Sigma_Scale'] controls energy strictness (default 0.1 = lenient)
-       - Default_Uncertainty from Scoring_Config['Energy']['Default_Uncertainty'] applied when data missing
+       - Sigma_Scale from Scoring_Config['Energy']['Sigma_Scale'] controls energy strictness (default 0.6; larger = stricter)
        - Incorporates measurement uncertainties from both levels
        - Monotonic: Energy overlap increases → similarity increases
        - Independent of spin/parity information
@@ -840,7 +839,7 @@ def extract_features(level_1, level_2):
 
     # ===== DISABLED CERTAINTY FEATURES (easily re-enable if needed) =====
     # Rationale: Certainty is redundant - already encoded in similarity scores:
-    #   - Match: both firm → 1.0, any tentative → 0.9 (certainty fully predictable)
+    #   - Match: both firm → 1.0, any tentative → 0.8 (certainty fully predictable)
     #   - Mismatch: certainty adds independent signal but creates feature redundancy
     # To re-enable: uncomment lines below, change return to 6D vector, update training data
     #

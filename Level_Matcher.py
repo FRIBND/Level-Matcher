@@ -282,8 +282,8 @@ if __name__ == "__main__":
             feature_dataframe = pd.DataFrame([feature_vector], columns=feature_names)
             xgboost_probability = model_xgboost.predict(feature_dataframe)[0]
 
-            # Record level pairs above output threshold
-            if xgboost_probability > pairwise_output_threshold:
+            # Record level pairs at or above output threshold
+            if xgboost_probability >= pairwise_output_threshold:
                 all_pairwise_results_for_display.append({
                     'level_1_id': level_1['level_id'], 'level_2_id': level_2['level_id'],
                     'dataset_code_1': level_1['dataset_code'], 'dataset_code_2': level_2['dataset_code'],
@@ -307,7 +307,7 @@ if __name__ == "__main__":
     # Write pairwise inference results to file (Side-by-Side Comparison)
     threshold_percent = pairwise_output_threshold * 100
     with open(pairwise_output_path, 'w', encoding='utf-8') as output_file:
-        output_file.write(f"=== PAIRWISE INFERENCE RESULTS (>{threshold_percent:.1f}%) ===\n")
+        output_file.write(f"=== PAIRWISE INFERENCE RESULTS (>={threshold_percent:.1f}%) ===\n")
         output_file.write(f"Model: XGBoost\n")
         output_file.write(f"Total Level Pairs Found: {len(all_pairwise_results_for_display)}\n\n")
         
@@ -320,7 +320,7 @@ if __name__ == "__main__":
                 f"Parity_Similarity={parity_similarity:.2f}, Specificity={specificity:.2f}, Gamma_Pattern_Similarity={gamma_decay_pattern_similarity:.2f}\n\n"
             )
     
-    print(f"\n[INFO] Pairwise Inference Complete: {len(all_pairwise_results_for_display)} level pairs (>{threshold_percent:.1f}%) written to '{pairwise_output_path}'")
+    print(f"\n[INFO] Pairwise Inference Complete: {len(all_pairwise_results_for_display)} level pairs (>={threshold_percent:.1f}%) written to '{pairwise_output_path}'")
 
     # ==========================================
     # Step 5: Graph-Based Clustering

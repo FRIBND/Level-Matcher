@@ -1,3 +1,41 @@
+"""
+Angular Momentum Coupling Calculator
+======================================
+
+# High-level Structure and Workflow Explanation:
+======================================
+
+Lists the final spin and parity values allowed when a target nucleus of known spin and parity couples with a transferred
+particle and an orbital angular momentum. Standalone helper (see docs/angular_momentum_coupling.md); the matching pipeline does not call it.
+
+Workflow Diagram:
+[Target spin-parity] + [Particle spin-parity]   (command-line arguments, or interactive prompts when omitted)
+            |
+            v
+[parse_spin_parity: validate the text, split into spin and parity]
+            |
+            v
+[Channel spins: |target spin - particle spin| ... target spin + particle spin, step 1]
+            |
+            v
+[For each orbital angular momentum 0 to 6 and each channel spin: final spins |channel - orbital| ... channel + orbital]
+            |
+            v
+[Final parity = target parity x particle parity x (-1)^orbital]  -->  [Printed table: wave, orbital, channel spin, final spin-parity]
+
+Numbered Technical Steps:
+1. Input: two spin-parity strings such as 3/2- and 1/2+ (integer or fractional spin, then + or -).
+2. Parsing: `parse_spin_parity` returns the spin as a Fraction and the parity as +1 or -1.
+3. Channel spin: every value from the absolute difference to the sum of target and particle spin.
+4. Final states: spins from |channel - orbital| to channel + orbital for waves s, p, d, f, g, h, i.
+5. Output: one table row per wave and channel spin, separated by orbital angular momentum.
+
+Architecture:
+- `parse_spin_parity`: Splits a string such as 3/2- into a Fraction spin and a parity of +1 or -1.
+- `prompt_spin_parity`: Asks interactively until the input is valid.
+- `calc`: Prints the coupling table for a target and a particle.
+"""
+
 import argparse
 from fractions import Fraction
 

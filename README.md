@@ -160,9 +160,9 @@ Nuclear level schemes typically contain fewer than 500 levels. Algorithms like L
 
 `Feature_Engineer.py` converts every candidate level pair into a 5-D feature vector (ordered: Energy, Spin, Parity, Specificity, Gamma). All scores live in $[0,1]$ and are monotonic (higher = stronger match evidence):
 
-1. **Energy_Similarity**: Gaussian kernel $\exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$ with $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$. `Sigma_Scale` = 0.2 (default: 1σ→82%, 2σ→45%, 3σ→17%). Missing energy → 0.0.
-2. **Spin_Similarity**: Optimistic max over all $J$ pairings. $\Delta J = 0$ firm→1.0, $\Delta J = 0$ any tentative→0.8, $\Delta J = 1$ any tentative→0.2, $\Delta J = 1$ firm→0.05, $\Delta J \ge 2$→0.0.
-3. **Parity_Similarity**: Optimistic max over all $\pi$ pairings. Same firm→1.0, same tentative→0.8, opposite tentative→0.05, opposite firm→0.0.
+1. **Energy_Similarity**: Gaussian kernel $\exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$ with $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$. `Sigma_Scale` = 0.6 (default: 1σ→55%, 2σ→9%, 3σ→0.5%). Missing energy → 0.0.
+2. **Spin_Similarity**: Optimistic max over all spin pairings. Same spin, both firm→1.0, same spin, any tentative→0.8, spin differs by 1, any tentative→0.2, spin differs by 1, both firm→0.05, spin differs by 2 or more→0.0.
+3. **Parity_Similarity**: Optimistic max over all parity pairings. Same firm→1.0, same tentative→0.8, opposite tentative→0.05, opposite firm→0.0.
 4. **Specificity**: Ambiguity penalty $1/f(\text{multiplicity})$, where multiplicity = product of both levels' spin-option counts. Selectable formulas: `sqrt` (default), `linear`, `log`, `tunable`.
 5. **Gamma_Decay_Pattern_Similarity**: Greedy one-to-one γ-energy matching within 3σ. Intensity mode: overlap = average when intensities are consistent ($Z \le 3\sigma$), minimum when inconsistent; sum is normalized by the smaller total intensity (subset-robust). Falls back to energy-only match counting when intensities are missing.
 
@@ -181,7 +181,7 @@ Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
 
 ## 5. Graph-Based Clustering Algorithm
 
-`Level_Clusterer.py` runs deterministic constrained graph partitioning: candidate pairs with probability ≥ 0.15 are processed greedily in descending order.
+`Level_Clusterer.py` runs deterministic constrained graph partitioning: candidate pairs with probability at or above the clustering merge threshold (default 0.15, set under Parameters) are processed greedily in descending order.
 - **Dataset Uniqueness**: Each cluster holds at most one level per dataset; ambiguous levels may join multiple clusters.
 - **Mutual Consistency (Clique)**: Clusters merge only when every cross-member pair clears the threshold — blocks weak "chain" merges.
 - **Anchor Selection**: Cluster anchor = member with smallest $\sigma_E$; clusters are sorted by average energy and written to `outputs/clustering/`.
@@ -222,7 +222,7 @@ Level-Matcher/
 2. **Parse raw ENSDF files**: `Dataset_Parser.py` scans all `.ens` files in `data/raw/` and writes standardized JSON datasets to `data/json/`.
 3. **Select inference targets**: pass the XREF letters of the datasets with `--labels` (the graphical interface does this from your selection; `Run_Pipeline.ps1` takes `-Labels L,Q,F`).
 4. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
-5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs above the output threshold are written to `outputs/pairwise/`.
+5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs at or above the output threshold are written to `outputs/pairwise/`.
 6. **Cluster matched levels**: `Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `outputs/clustering/`.
 7. **Review outputs**: `Combined_Visualizer.py` renders level schemes to `outputs/figures/` for visual audit.
 
@@ -232,9 +232,9 @@ Level-Matcher/
 
 ### 8.1 Mandatory Runtime Validation
 After any code modification:
-1.  Execute `Level_Matcher.py` to verify the training pipeline (Exit Code 0).
+1.  Run `.\Run_Pipeline.ps1 -Labels L,Q` (parser, detached matcher, visualizer) and confirm it finishes without errors; do not run `Level_Matcher.py` directly in the VS Code terminal.
 2.  Check `outputs/figures/Training_Metrics_Diagnostic.png` for overfitting flags.
-3.  Run `Combined_Visualizer.py` to ensure visual output integrity.
+3.  Check the other figures in `outputs/figures/` for visual output integrity.
 
 ### 8.2 Coding Protocols
 - **No Acronyms**: Variables must be fully spelled out (e.g., `energy_uncertainty` not `ener_uncert`).

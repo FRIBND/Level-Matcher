@@ -64,7 +64,7 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
     # Classification: Constrained Agglomerative Partitioning with domain-specific hard constraints
     # Key Constraints:
     #   1. Dataset Uniqueness: Each cluster contains at most one level per dataset (no duplicate sources)
-    #   2. Mutual Consistency (Clique Structure): All cluster members must be pairwise compatible (all pairs > clustering_merge_threshold).
+    #   2. Mutual Consistency (Clique Structure): All cluster members must be pairwise compatible (all pairs >= clustering_merge_threshold).
     #      This prevents "chain" merges where A-B (strong) and B-C (strong) but A-C (weak < threshold).
     #      Before merging two clusters, code verifies EVERY member in Cluster 1 matches EVERY member in Cluster 2 (lines 130-145).
     #   3. Multi-Cluster Membership: Unresolved levels (large uncertainty) can belong to multiple distinct clusters simultaneously,
@@ -86,7 +86,7 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
         level_id_to_clusters[member_id] = [cluster]
 
     # Extract strong candidate pairs for merging
-    # Only level pairs exceeding clustering_merge_threshold qualify for cluster operations
+    # Only level pairs reaching clustering_merge_threshold qualify for cluster operations
     valid_pairs = set()
     for matching_level_pair in matching_level_pairs:
         if matching_level_pair['probability'] >= clustering_merge_threshold:
@@ -276,7 +276,7 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
     # Write clustering results to file
     clustering_threshold_percent = clustering_merge_threshold * 100
     with open(output_filename, 'w', encoding='utf-8') as output_file:
-        output_file.write(f"=== FINAL CLUSTERING RESULTS: {model_name} (Merge Threshold: >{clustering_threshold_percent:g}%) ===\n")
+        output_file.write(f"=== FINAL CLUSTERING RESULTS: {model_name} (Merge Threshold: >={clustering_threshold_percent:g}%) ===\n")
         output_file.write(f"Total Clusters: {len(unique_clusters)}\n")
         output_file.writelines(clustering_output_lines)
     
