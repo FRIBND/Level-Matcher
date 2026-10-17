@@ -53,7 +53,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def visualize_training_metrics(xgboost_metrics, output_path='outputs/figures/Training_Metrics_Diagnostic.png'):
+def visualize_training_metrics(xgboost_metrics, output_path='level_matcher_files/Training_Metrics_Diagnostic.png'):
     """
     Generates comprehensive diagnostic plots for XGBoost model training metrics.
     

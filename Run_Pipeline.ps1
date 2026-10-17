@@ -20,7 +20,7 @@
 #   [3. Combined Visualizer]     Runs synchronously after Level Matcher exits
 #          |
 #          v
-#   [outputs/figures/*.png]      Final visual results
+#   [outputs/*.png]             Final visual results
 #
 # Usage:
 #   Open a PowerShell terminal in the project root, then run (letters are the XREF letters of the datasets to match):
@@ -67,7 +67,7 @@ if (Test-Path $error_log_file) { Remove-Item $error_log_file -Force }
 
 $process_arguments = @{
     FilePath               = $python
-    ArgumentList           = @("Level_Matcher.py", "--labels") + $Labels + @("--json_dir", "data/json", "--xref", "data/raw/XREF.txt")
+    ArgumentList           = @("Level_Matcher.py", "--labels") + $Labels + @("--json_dir", "data/json", "--xref", "data/raw/XREF.txt", "--figures")
     WorkingDirectory       = $project_dir
     RedirectStandardOutput = $log_file
     RedirectStandardError  = $error_log_file
@@ -144,4 +144,4 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Green
 Write-Host " Pipeline complete. Output files:" -ForegroundColor Green
 Write-Host "======================================================" -ForegroundColor Green
-Get-ChildItem "outputs" -Recurse -File | Select-Object -Property @{Name="File"; Expression={$_.FullName.Replace($project_dir + "\", "")}}, LastWriteTime | Format-Table -AutoSize
+Get-ChildItem "outputs" -File | Select-Object -Property @{Name="File"; Expression={$_.FullName.Replace($project_dir + "\", "")}}, LastWriteTime | Format-Table -AutoSize

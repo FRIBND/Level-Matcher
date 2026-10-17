@@ -37,10 +37,10 @@ Inference-first pipeline: raw ENSDF records → standardized JSON → synthetic-
 [Synthetic Training Data]    [Pairwise Inference]
         |                            |
         v                            v
-[XGBoost Training] <--- [Level_Matcher] --> [outputs/pairwise/]
+[XGBoost Training] <--- [Level_Matcher] --> [level_matcher_files/]
         |                            |
         v                            v
-[Training_Metrics_Visualizer]  [Level_Clusterer] --> [outputs/clustering/]
+[Training_Metrics_Visualizer]  [Level_Clusterer] --> [level_matcher_files/]
                                         |
                                         v
                     [Combined_Visualizer] --> [Level Scheme Plots]
@@ -184,7 +184,7 @@ Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
 `Level_Clusterer.py` runs deterministic constrained graph partitioning: candidate pairs with probability at or above the clustering merge threshold (default 0.15, set under Parameters) are processed greedily in descending order.
 - **Dataset Uniqueness**: Each cluster holds at most one level per dataset; ambiguous levels may join multiple clusters.
 - **Mutual Consistency (Clique)**: Clusters merge only when every cross-member pair clears the threshold — blocks weak "chain" merges.
-- **Anchor Selection**: Cluster anchor = member with smallest $\sigma_E$; clusters are sorted by average energy and written to `outputs/clustering/`.
+- **Anchor Selection**: Cluster anchor = member with smallest $\sigma_E$; clusters are sorted by average energy and written to `level_matcher_files/`.
 
 ---
 
@@ -202,10 +202,7 @@ Level-Matcher/
 ├── data/
 │   ├── raw/                   # ENSDF source files and XREF labels
 │   └── json/                  # Standardized JSON datasets consumed by the pipeline
-├── outputs/
-│   ├── figures/               # PNG outputs (Diagnostics, Level Schemes)
-│   ├── clustering/            # Final cluster memberships (Text reports)
-│   └── pairwise/              # Pairwise match probabilities
+├── outputs/                   # Developer pipeline results, all in one folder: pair report, cluster report, optional PNG figures, logs
 ├── docs/                      # Documentation and technical reports
 ├── scripts/
 │   ├── hyperparameter_tuning/ # Optimization and validation utilities
@@ -217,14 +214,14 @@ Level-Matcher/
 
 ## 7. Workflow & Usage
 
-0. **Graphical interface**: `python Level_Matcher_GUI.py`. Browse to any folder holding `.ens` files including the adopted file (its X records provide the dataset letters; `XREF.txt` is the fallback), select two or more datasets, optionally change the feature engineering (scoring) and level matcher (threshold) parameters under **Parameters** (the defaults are the values at the top of `Feature_Engineer.py` and `Level_Matcher.py`; figure layout and fonts are set at the top of `Combined_Visualizer.py`), then click Run Level Matcher. JSON and results are written next to that folder (`json/`, `outputs/`); the parameters used are saved as `outputs/parameters.json`.
+0. **Graphical interface**: `python Level_Matcher_GUI.py`. Browse to any folder holding `.ens` files including the adopted file (its X records provide the dataset letters; `XREF.txt` is the fallback), select two or more datasets, optionally change the feature engineering (scoring) and level matcher (threshold) parameters under **Parameters** (the defaults are the values at the top of `Feature_Engineer.py` and `Level_Matcher.py`; figure layout and fonts are set at the top of `Combined_Visualizer.py`), then click Run Level Matcher. Everything the tool writes goes into one folder, `level_matcher_files/`, created inside the folder you browsed to (no subfolders): the parsed JSON datasets, the pair report, the cluster report and the parameters used (`parameters.json`). The PNG figures (large files) are written only if **Generate figures** is ticked; the option is off by default and remembered between sessions.
 1. **Run full pipeline (developer, uses `data/raw/`)**: `.\Run_Pipeline.ps1 -Labels L,Q,F` executes Dataset Parser → Level Matcher (detached subprocess; logs stream to `outputs/run_log.txt`) → Combined Visualizer. Detached spawn prevents VS Code freezes.
 2. **Parse raw ENSDF files**: `Dataset_Parser.py` scans all `.ens` files in `data/raw/` and writes standardized JSON datasets to `data/json/`.
 3. **Select inference targets**: pass the XREF letters of the datasets with `--labels` (the graphical interface does this from your selection; `Run_Pipeline.ps1` takes `-Labels L,Q,F`).
 4. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
-5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs at or above the output threshold are written to `outputs/pairwise/`.
-6. **Cluster matched levels**: `Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `outputs/clustering/`.
-7. **Review outputs**: `Combined_Visualizer.py` renders level schemes to `outputs/figures/` for visual audit.
+5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs at or above the output threshold are written to `outputs/Output_Level_Pairwise_Inference.txt`.
+6. **Cluster matched levels**: `Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `outputs/Output_Clustering_Results_XGBoost.txt`.
+7. **Review outputs**: `Combined_Visualizer.py` renders level schemes and the cluster table to `outputs/` for visual audit (graphical interface: only with **Generate figures**).
 
 ---
 
@@ -233,8 +230,8 @@ Level-Matcher/
 ### 8.1 Mandatory Runtime Validation
 After any code modification:
 1.  Run `.\Run_Pipeline.ps1 -Labels L,Q` (parser, detached matcher, visualizer) and confirm it finishes without errors; do not run `Level_Matcher.py` directly in the VS Code terminal.
-2.  Check `outputs/figures/Training_Metrics_Diagnostic.png` for overfitting flags.
-3.  Check the other figures in `outputs/figures/` for visual output integrity.
+2.  Check `level_matcher_files/Training_Metrics_Diagnostic.png` for overfitting flags.
+3.  Check the other figures in `level_matcher_files/` for visual output integrity.
 
 ### 8.2 Coding Protocols
 - **No Acronyms**: Variables must be fully spelled out (e.g., `energy_uncertainty` not `ener_uncert`).

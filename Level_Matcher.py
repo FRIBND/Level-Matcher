@@ -50,7 +50,7 @@ Step 2: Model Training
   Process: Train XGBoost with monotonic constraints (Physics Prior)
     - XGBoost: Gradient boosting with monotonic constraints enforcing physics priors
   Evaluation: RMSE, MAE, LogLoss, Feature Importance (Gain metric)
-  Output: Trained XGBoost model with diagnostic visualizations
+  Output: Trained XGBoost model; the diagnostic figure is written only with --figures
 
 Step 3: Test Data Ingestion
   Source: Real-world datasets selected with --labels (XREF letters, set by the graphical interface)
@@ -95,7 +95,8 @@ if __name__ == "__main__":
     argument_parser.add_argument("--labels", nargs="+", required=True, help="XREF letters of the datasets to match; each maps to {nuclide}_{XREF text}.json in --json_dir")
     argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
     argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
-    argument_parser.add_argument("--output_dir", default="outputs", help="Root directory for pairwise/, clustering/, figures/ (default: outputs)")
+    argument_parser.add_argument("--output_dir", default="level_matcher_files", help="Folder for every output file, without subfolders (default: level_matcher_files)")
+    argument_parser.add_argument("--figures", action="store_true", help="Also write the training diagnostic figure (default: no figure)")
     argument_parser.add_argument("--parameters", default=None, help="JSON file with parameter values from the GUI (default: values in the scripts)")
     command_line_arguments = argument_parser.parse_args()
 
@@ -109,11 +110,10 @@ if __name__ == "__main__":
     for section_name, section_values in user_parameters.get('Scoring_Config', {}).items():
         Scoring_Config[section_name].update(section_values)
     print(f"Parameters: {command_line_arguments.parameters or 'script defaults'}")
-    pairwise_output_path = os.path.join(command_line_arguments.output_dir, 'pairwise', 'Output_Level_Pairwise_Inference.txt')
-    clustering_output_path = os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt')
-    training_figure_path = os.path.join(command_line_arguments.output_dir, 'figures', 'Training_Metrics_Diagnostic.png')
-    os.makedirs(os.path.dirname(pairwise_output_path), exist_ok=True)
-    os.makedirs(os.path.dirname(clustering_output_path), exist_ok=True)
+    pairwise_output_path = os.path.join(command_line_arguments.output_dir, 'Output_Level_Pairwise_Inference.txt')
+    clustering_output_path = os.path.join(command_line_arguments.output_dir, 'Output_Clustering_Results_XGBoost.txt')
+    training_figure_path = os.path.join(command_line_arguments.output_dir, 'Training_Metrics_Diagnostic.png')
+    os.makedirs(command_line_arguments.output_dir, exist_ok=True)
 
     # ==========================================
     # Main Execution Pipeline:
@@ -226,22 +226,23 @@ if __name__ == "__main__":
     print(f"  Train LogLoss: {train_logloss:.4f} | Validation LogLoss: {validation_logloss:.4f}")
 
     # ==========================================
-    # Step 2b: Visualize Training Diagnostics
+    # Step 2b: Visualize Training Diagnostics (only with --figures)
     # ==========================================
     # Generate comprehensive diagnostic plots for XGBoost model
-    print("\nGenerating Training Metrics Visualization...")
-    xgboost_metrics_data = {
-        'train_rmse': train_rmse,
-        'validation_rmse': validation_rmse,
-        'train_mae': train_mae,
-        'validation_mae': validation_mae,
-        'train_logloss': train_logloss,
-        'validation_logloss': validation_logloss,
-        'feature_importance': xgboost_feature_importance,
-        'best_iteration': model_xgboost.best_iteration,
-        'maximum_iterations': 2000
-    }
-    visualize_training_metrics(xgboost_metrics_data, training_figure_path)
+    if command_line_arguments.figures:
+        print("\nGenerating Training Metrics Visualization...")
+        xgboost_metrics_data = {
+            'train_rmse': train_rmse,
+            'validation_rmse': validation_rmse,
+            'train_mae': train_mae,
+            'validation_mae': validation_mae,
+            'train_logloss': train_logloss,
+            'validation_logloss': validation_logloss,
+            'feature_importance': xgboost_feature_importance,
+            'best_iteration': model_xgboost.best_iteration,
+            'maximum_iterations': 2000
+        }
+        visualize_training_metrics(xgboost_metrics_data, training_figure_path)
 
     # ==========================================
     # Step 3: Test Data Ingestion

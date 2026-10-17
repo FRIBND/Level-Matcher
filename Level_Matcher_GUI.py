@@ -6,16 +6,16 @@ Level Matcher Graphical Interface
 ======================================
 
 The user picks a workspace folder that holds their own ENSDF .ens files, including the adopted file whose X records list the dataset letters (XREF.txt is the fallback).
-All outputs (parsed JSON and matching results) are written to json and outputs folders next to the workspace folder
-(for example workspace .../S34/new -> .../S34/json and .../S34/outputs), so the user's .ens folder is never modified and
-the tool never reads from or writes to the tool's own data/raw folder.
+Every file the tool writes (parsed JSON, parameters.json, reports and optional figures) goes into one folder named
+level_matcher_files inside the workspace folder, without subfolders (for example workspace .../S34/new -> .../S34/new/level_matcher_files),
+so the user's .ens files are never modified and the tool never reads from or writes to the tool's own data/raw folder.
 
 Workflow Diagram:
 
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/json/{nuclide}_{XREF}.json]
+  Dataset_Parser.py (subprocess, automatic) --> [<workspace>/level_matcher_files/{nuclide}_{XREF}.json]
             |
             v
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
@@ -26,10 +26,10 @@ Workflow Diagram:
             +------------------+-----------------------+
                                |
                                v
-                      [Run Level Matcher]  (saves outputs/parameters.json)
+                      [Run Level Matcher]  (saves level_matcher_files/parameters.json)
                                |
                                v
-  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (subprocesses) --> [<workspace parent>/outputs/]
+  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (only if Generate figures is ticked) --> [<workspace>/level_matcher_files/]
             |
             v
   [Live log panel]
@@ -37,7 +37,7 @@ Workflow Diagram:
 Numbered Technical Steps:
 1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
    The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
-2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside the json folder beside the workspace
+2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside level_matcher_files in the workspace folder
    (created if missing; earlier parser output there is deleted first, other files are left alone); the parser log
    builds the dataset list.
 3. Selection: at least two datasets are required for cross-dataset matching.
@@ -46,13 +46,15 @@ Numbered Technical Steps:
    box shows what the parameter does). Figure layout and fonts are not in the dialog (edit the top of Combined_Visualizer.py).
    Changed values are saved in settings.json.
 5. Run: matcher and visualizer run as subprocesses so training never freezes the window; the matcher receives all parameter
-   values with --parameters (saved as outputs/parameters.json) and every run streams its output to the log.
-6. Results: reports and figures are written to <workspace parent>/outputs.
+   values with --parameters (saved as level_matcher_files/parameters.json) and every run streams its output to the log.
+   The Generate figures checkbox (off by default, remembered in settings.json) adds --figures for the matcher and runs
+   Combined_Visualizer.py afterwards; without it no PNG file is written.
+6. Results: the pair report and the cluster report (plus the PNG figures when enabled) are written to level_matcher_files.
 
 Architecture:
 - `Level_Matcher_Interface`: Tkinter window class holding all widgets and state (Arial for menus and labels, one monospaced family
   for the entry, dataset table rows and log; DPI aware, so pixel sizes follow the Windows display scale). Layout top to bottom:
-  workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Run Level Matcher), log, footer (status text | small FRIB logo).
+  workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Generate figures, Run Level Matcher), log, footer (status text | small FRIB logo).
   The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
 - `read_script_defaults`: Reads parameter defaults from the top of the scripts without importing them.
 - `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | parameter | value | default. Feature engineering
@@ -78,6 +80,7 @@ import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
 project_directory = os.path.dirname(os.path.abspath(__file__))
+output_folder_name = "level_matcher_files"  # Created inside the workspace folder; holds every file the tool writes (no subfolders)
 
 # Parameters of the Parameters dialog. Row = (key path, label, kind, minimum, maximum, meaning); kind is float, int, bool or a tuple of choices.
 # Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults.
@@ -188,7 +191,7 @@ class Level_Matcher_Interface:
         self.dataset_records = []  # One dictionary per detected dataset: letter, filename, reaction
         self.xref_path = ""
 
-        # Settings remembered between sessions: last workspace folder and the parameter values changed from the defaults
+        # Settings remembered between sessions: last workspace folder, figure option and the parameter values changed from the defaults
         self.settings_path = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "Level_Matcher", "settings.json")
         try:
             with open(self.settings_path, "r", encoding="utf-8") as settings_file:
@@ -196,6 +199,7 @@ class Level_Matcher_Interface:
         except (OSError, ValueError):
             self.settings = {}
         last_workspace = self.settings.get("last_workspace", "")
+        self.figures_variable = tk.BooleanVar(value=bool(self.settings.get("generate_figures", False)))
         self.parameter_defaults = read_script_defaults(list(parameter_rows))
         saved_parameters = self.settings.get("parameters", {})
         self.parameter_values = {key_path: saved_parameters.get(key_path, default) for key_path, default in self.parameter_defaults.items()}
@@ -245,6 +249,7 @@ class Level_Matcher_Interface:
                    command=lambda: self.dataset_table.selection_remove(self.dataset_table.selection())).pack(side="left", padx=(5, 0))
         self.run_button = ttk.Button(action_frame, text="Run Level Matcher", command=self.run_matcher)
         self.run_button.pack(side="right", padx=(0, 25))
+        ttk.Checkbutton(action_frame, text="Generate figures", variable=self.figures_variable, command=self.save_settings).pack(side="right", padx=(0, 15))
         ttk.Button(action_frame, text="Parameters", command=self.open_parameter_dialog).pack(side="right", padx=(0, 5))
 
         # 4. Log panel
@@ -294,6 +299,7 @@ class Level_Matcher_Interface:
 
     def save_settings(self):
         self.settings["last_workspace"] = self.workspace_variable.get()
+        self.settings["generate_figures"] = self.figures_variable.get()
         self.settings["parameters"] = {key_path: value for key_path, value in self.parameter_values.items()
                                        if value != self.parameter_defaults[key_path]}
         os.makedirs(os.path.dirname(self.settings_path), exist_ok=True)
@@ -486,7 +492,7 @@ class Level_Matcher_Interface:
         command = [sys.executable, os.path.join(project_directory, "Dataset_Parser.py"),
                    "--raw_dir", workspace_path,
                    "--xref", xref_path,
-                   "--output_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json")]
+                   "--output_dir", os.path.join(workspace_path, output_folder_name)]
         self.status_variable.set("Scanning workspace...")
 
         def finish_scan(succeeded):
@@ -511,8 +517,8 @@ class Level_Matcher_Interface:
             return
 
         # The parameter values of this run are saved next to the results as parameters.json (nested like the script variables)
-        outputs_directory = os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "outputs")
-        os.makedirs(outputs_directory, exist_ok=True)
+        output_directory = os.path.join(workspace_path, output_folder_name)
+        os.makedirs(output_directory, exist_ok=True)
         nested_parameters = {}
         for key_path, value in self.parameter_values.items():
             *parent_names, leaf_name = key_path.split(".")
@@ -520,22 +526,22 @@ class Level_Matcher_Interface:
             for parent_name in parent_names:
                 target = target.setdefault(parent_name, {})
             target[leaf_name] = value
-        parameters_path = os.path.join(outputs_directory, "parameters.json")
+        parameters_path = os.path.join(output_directory, "parameters.json")
         with open(parameters_path, "w", encoding="utf-8") as parameters_file:
             json.dump(nested_parameters, parameters_file, indent=4)
 
         shared_arguments = ["--labels", *selected_letters,
                             "--xref", self.xref_path,
-                            "--json_dir", os.path.join(os.path.dirname(os.path.normpath(workspace_path)), "json"),
-                            "--output_dir", outputs_directory]
-        commands = [
-            [sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path],
-            [sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments],
-        ]
+                            "--json_dir", output_directory,
+                            "--output_dir", output_directory]
+        commands = [[sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path]]
+        if self.figures_variable.get():
+            commands[0].append("--figures")
+            commands.append([sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments])
         self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
 
         def finish_run(succeeded):
-            self.status_variable.set("Done. Results are in the outputs folder next to the workspace." if succeeded
+            self.status_variable.set(f"Done. Results are in the {output_folder_name} folder inside the workspace." if succeeded
                                      else "Run failed. See log.")
 
         self.start_subprocess_sequence(commands, finish_run)

@@ -31,7 +31,7 @@ Workflow Diagram:
 # 4. Report: file name, location inside the file, and message; exit code 1 if any violation exists.
 #
 # Usage:
-#   python scripts/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\json
+#   python scripts/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\new\\level_matcher_files
 #   (defaults: --json_dir data/json, --schema_dir data/ensdf_schema_1.0.0, relative to the repository root)
 #
 # Limitation: the schema checks structure and types, not physics (for example, whether a normalized intensity is correct).
@@ -74,8 +74,8 @@ wrapper_schema = {
 }
 validator = Draft202012Validator(wrapper_schema, registry=registry)
 
-# 3. Validate every file and collect all violations
-json_paths = sorted(glob.glob(os.path.join(arguments.json_dir, "*.json")))
+# 3. Validate every file and collect all violations (parameters.json is the GUI record of parameter values, not a dataset)
+json_paths = sorted(path for path in glob.glob(os.path.join(arguments.json_dir, "*.json")) if os.path.basename(path) != "parameters.json")
 if not json_paths:
     print(f"No .json files found in '{arguments.json_dir}'.")
     sys.exit(1)

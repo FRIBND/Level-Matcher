@@ -20,7 +20,7 @@ Workflow Diagram:
 [clustering reports] --> [parse_clustering_results] --> [Cluster Table Renderer]
                                                |
                                                v
-                        [outputs/figures/*.png]
+                        [<output_dir>/*.png]
 
 Numbered Technical Steps:
 1. Level scheme rendering: scaled level bars and gamma arrows per dataset column on a shared energy scale.
@@ -344,17 +344,15 @@ if __name__ == "__main__":
     argument_parser.add_argument("--labels", nargs="+", required=True, help="XREF letters of the datasets to draw")
     argument_parser.add_argument("--json_dir", required=True, help="Directory with the parsed dataset JSON files")
     argument_parser.add_argument("--xref", required=True, help="File with the X records (adopted .ens or XREF.txt)")
-    argument_parser.add_argument("--output_dir", default="outputs", help="Root directory containing clustering/ and figures/")
+    argument_parser.add_argument("--output_dir", default="outputs", help="Folder holding Output_Clustering_Results_XGBoost.txt; the figures are written there too (default: outputs)")
     command_line_arguments = argument_parser.parse_args()
-    figure_directory = os.path.join(command_line_arguments.output_dir, 'figures')
-    os.makedirs(figure_directory, exist_ok=True)
 
     print("Combined Visualizer: generating plots...")
     plot_level_schemes(command_line_arguments.labels, command_line_arguments.json_dir, command_line_arguments.xref,
-                       os.path.join(figure_directory, 'Input_Level_Scheme.png'))
+                       os.path.join(command_line_arguments.output_dir, 'Input_Level_Scheme.png'))
     plot_clustering_results(
-        input_path=os.path.join(command_line_arguments.output_dir, 'clustering', 'Output_Clustering_Results_XGBoost.txt'),
-        output_path=os.path.join(figure_directory, 'Output_Cluster_Scheme_XGBoost.png'),
+        input_path=os.path.join(command_line_arguments.output_dir, 'Output_Clustering_Results_XGBoost.txt'),
+        output_path=os.path.join(command_line_arguments.output_dir, 'Output_Cluster_Scheme_XGBoost.png'),
         title_suffix='(XGBoost / Energy-Dominant)'
     )
     print("All visualizations complete.")

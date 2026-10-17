@@ -1,0 +1,19 @@
+output folder name constant: level_matcher_files
+Generate figures default: False
+scan seconds: 0.4
+workspace folder entries: ['S34_30si_a_g_a_n_resonances.ens', 'S34_33s_n_g_n_n_resonances.ens', 'XREF.txt', 'level_matcher_files', 'my_notes.txt']
+beside the workspace: ['new'] (expected ['new'])
+output folder after scan: ['34S_30SI(A,G),(A,N)_RESONANCES.json', '34S_33S(N,G),(N,N)_RESONANCES.json']
+run 1 (no figures) seconds: 19.7 | status: Done. Results are in the level_matcher_files folder inside the workspace.
+commands: [('Dataset_Parser.py', False), ('Level_Matcher.py', False)]
+output folder after run 1: ['34S_30SI(A,G),(A,N)_RESONANCES.json', '34S_33S(N,G),(N,N)_RESONANCES.json', 'Output_Clustering_Results_XGBoost.txt', 'Output_Level_Pairwise_Inference.txt', 'parameters.json']
+subfolders: [] | png files: [] | error in log: False
+checkbox text: Generate figures | value: True | saved: True
+run 2 (figures) seconds: 13.5 | status: Done. Results are in the level_matcher_files folder inside the workspace.
+commands: [('Level_Matcher.py', True), ('Combined_Visualizer.py', False)]
+output folder after run 2: ['34S_30SI(A,G),(A,N)_RESONANCES.json', '34S_33S(N,G),(N,N)_RESONANCES.json', 'Input_Level_Scheme.png', 'Output_Cluster_Scheme_XGBoost.png', 'Output_Clustering_Results_XGBoost.txt', 'Output_Level_Pairwise_Inference.txt', 'Training_Metrics_Diagnostic.png', 'parameters.json']
+subfolders: [] | error in log: False
+png sizes (KB): {'Input_Level_Scheme.png': 162, 'Output_Cluster_Scheme_XGBoost.png': 3587, 'Training_Metrics_Diagnostic.png': 547}
+beside the workspace still: ['new'] | workspace user file untouched: True
+reopened: generate figures: True | workspace: True
+validator exit: 0 | Files checked: 2; violations: 0
