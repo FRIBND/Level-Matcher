@@ -7,7 +7,7 @@ Feature Engineering For Nuclear Level Matching
 
 Functional Architecture:
                           ┌─────────────────────────────────┐
-                          │   Scoring_Config & Physics Rules │
+                          │  Scoring_Config & Physics Rules │
                           └──────────────┬──────────────────┘
                                          │ (all thresholds and parameters)
                     ┌────────────────────┼─────────────────────────┐

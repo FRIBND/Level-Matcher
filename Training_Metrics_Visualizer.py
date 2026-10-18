@@ -35,6 +35,7 @@ Numbered Technical Steps:
 6. **Panel 4 - Feature Importance**: Horizontal bar chart showing Gain (average loss reduction) for each feature.
 7. **Panel 5 - Overfitting Analysis**: Calculates and visualizes train/validation RMSE gap (overfitting indicator).
 8. **Quality Assurance**: Adds reference lines, annotations, and standardized color coding for publication-quality output.
+9. **Saving**: Windows cannot overwrite a figure that is still open in an image viewer or preview (reported as Errno 22), so the script stops with a message asking to close it.
 
 Architecture:
 - Single function `visualize_training_metrics()` for simplicity
@@ -52,6 +53,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import sys
 
 def visualize_training_metrics(xgboost_metrics, output_path='level_matcher_files/Training_Metrics_Diagnostic.png'):
     """
@@ -263,7 +265,10 @@ def visualize_training_metrics(xgboost_metrics, output_path='level_matcher_files
     
     # Save figure
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    try:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    except OSError as error:
+        sys.exit(f"[ERROR] Cannot write the figure: {error}. If it is open in an image viewer or preview, close it and run again.")
     plt.close()
     
     print(f"[INFO] Training metrics diagnostic plot saved to {output_path}")

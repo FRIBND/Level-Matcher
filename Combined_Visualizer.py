@@ -25,6 +25,8 @@ Workflow Diagram:
 Numbered Technical Steps:
 1. Level scheme rendering: scaled level bars and gamma arrows per dataset column on a shared energy scale.
 2. Clustering rendering: cluster memberships as aligned text blocks sorted by anchor energy.
+3. Saving: the figures are written to --output_dir. Windows cannot overwrite a figure that is still open in an image viewer or
+   preview (reported as Errno 22), so the script stops with a message asking to close it.
 
 Architecture:
 - `load_dataset`: Reads standardized JSON level and gamma tables.
@@ -41,6 +43,7 @@ import numpy as np
 import json
 import os
 import re
+import sys
 import argparse
 
 from Dataset_Parser import find_dataset_file, parse_xref_file
@@ -200,7 +203,10 @@ def plot_level_schemes(datasets, json_directory, xref_path, output_file):
     axis.set_title("Input Level Schemes", fontsize=Font_Config['title'], fontweight='bold', pad=20, family='Times New Roman')
 
     plt.tight_layout()
-    plt.savefig(output_file, dpi=300)
+    try:
+        plt.savefig(output_file, dpi=300)
+    except OSError as error:
+        sys.exit(f"[ERROR] Cannot write the figure: {error}. If it is open in an image viewer or preview, close it and run again.")
     print(f"[INFO] Level scheme visualization saved to {output_file}")
     plt.close()
 
@@ -331,7 +337,10 @@ def plot_clustering_results(input_path, output_path, title_suffix=''):
     axis.set_title(full_title, fontsize=Font_Config['cluster_title'], fontweight='bold', pad=20, family='Times New Roman')
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
+    try:
+        plt.savefig(output_path, dpi=300)
+    except OSError as error:
+        sys.exit(f"[ERROR] Cannot write the figure: {error}. If it is open in an image viewer or preview, close it and run again.")
     print(f"[INFO] Clustering visualization saved to {output_path}")
     plt.close()
 
