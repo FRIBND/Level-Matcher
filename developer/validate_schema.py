@@ -31,8 +31,8 @@ Workflow Diagram:
 # 4. Report: file name, location inside the file, and message; exit code 1 if any violation exists.
 #
 # Usage:
-#   python scripts/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\raw\\level_matcher_files
-#   (defaults: --json_dir data/json, --schema_dir data/ensdf_schema_1.0.0, relative to the repository root)
+#   python developer/validate_schema.py --json_dir D:\\X\\ND\\ENSDF\\A34\\S34\\raw\\level_matcher_files
+#   (defaults: --json_dir developer/data/json, --schema_dir developer/data/ensdf_schema_1.0.0, relative to the repository root)
 #
 # Limitation: the schema checks structure and types, not physics (for example, whether a normalized intensity is correct).
 """
@@ -49,10 +49,10 @@ from referencing import Registry, Resource
 repository_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 argument_parser = argparse.ArgumentParser(description="Validate parser output JSON files against ENSDF JSON Schema 1.0.0.")
-argument_parser.add_argument("--json_dir", default=os.path.join(repository_root, "data", "json"),
-                             help="Directory with the JSON files to validate (default: data/json)")
-argument_parser.add_argument("--schema_dir", default=os.path.join(repository_root, "data", "ensdf_schema_1.0.0"),
-                             help="Directory with the schema files (default: data/ensdf_schema_1.0.0)")
+argument_parser.add_argument("--json_dir", default=os.path.join(repository_root, "developer", "data", "json"),
+                             help="Directory with the JSON files to validate (default: developer/data/json)")
+argument_parser.add_argument("--schema_dir", default=os.path.join(repository_root, "developer", "data", "ensdf_schema_1.0.0"),
+                             help="Directory with the schema files (default: developer/data/ensdf_schema_1.0.0)")
 arguments = argument_parser.parse_args()
 
 # 1. Registry of all schema files, keyed by their $id

@@ -201,7 +201,7 @@ The `angular_momentum_coupling.py` utility models reaction-channel coupling; it 
 When you run the code:
 
 ```bash
-python scripts/angular_momentum_coupling.py
+python developer/angular_momentum_coupling.py
 ```
 
 then enter prompted values, for example:

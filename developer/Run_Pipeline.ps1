@@ -1,37 +1,38 @@
 # =============================================================================
-# Run_Pipeline.ps1 — Full Codebase Workflow Wrapper
+# Run_Pipeline.ps1 — Developer Pipeline (not needed by users of the graphical interface)
 # =============================================================================
 #
 # High-level Structure and Workflow:
 #
-# Purpose: Execute the complete Level-Matcher pipeline in sequence without
-#          freezing VS Code. Level_Matcher.py is spawned as a detached external
-#          process with its stdout redirected to a log file, allowing the
-#          terminal to remain responsive during heavy ML computation.
+# Purpose: Execute the complete Level-Matcher pipeline on the bundled sample data in
+#          developer/data/raw in sequence without freezing VS Code. engine/Level_Matcher.py
+#          is spawned as a detached external process with its stdout redirected to a log
+#          file, allowing the terminal to remain responsive during heavy ML computation.
 #
 # Workflow:
 #
-#   [1. Dataset Parser]          Runs synchronously (lightweight, <5s)
-#          |
+#   [1. engine/Dataset_Parser.py]      Runs synchronously (lightweight, <5s)
+#          | -- developer/data/raw --> developer/data/json
 #          v
-#   [2. Level Matcher]           Spawned as detached process (heavy ML compute)
+#   [2. engine/Level_Matcher.py]       Spawned as detached process (heavy ML compute)
 #          | -- logs to --> level_matcher_files/run_log.txt (streamed live in terminal)
 #          v
-#   [3. Combined Visualizer]     Runs synchronously after Level Matcher exits
+#   [3. engine/Combined_Visualizer.py] Runs synchronously after the matcher exits
 #          |
 #          v
-#   [level_matcher_files/*.png]  Final visual results
+#   [level_matcher_files/*.png]        Final visual results
 #
-# Usage:
-#   Open a PowerShell terminal in the project root, then run (letters are the XREF letters of the datasets to match):
-#       .\Run_Pipeline.ps1 -Labels L,Q,F
+# Usage (from the repository root, or any folder — this script changes to the root itself):
+#   .\developer\Run_Pipeline.ps1 -Labels L,Q,F
 #   Optional: -Python <path to python.exe> (default: python from PATH).
 #
 # =============================================================================
 
 param([Parameter(Mandatory = $true)][string[]]$Labels, [string]$Python = "python")
-$project_dir = $PSScriptRoot
+$project_dir = Split-Path $PSScriptRoot -Parent  # Repository root (this script lives in developer/)
 $log_file = Join-Path $project_dir "level_matcher_files\run_log.txt"
+$sample_json_directory = "developer/data/json"
+$sample_xref_file = "developer/data/raw/XREF.txt"
 
 Set-Location $project_dir
 # The log files and every result live in this folder, so it must exist before the log redirection starts
@@ -44,9 +45,9 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Cyan
 Write-Host " Step 1/3: Dataset Parser" -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
-& $python "Dataset_Parser.py"
+& $python "engine/Dataset_Parser.py"
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Dataset_Parser.py failed with exit code $LASTEXITCODE. Aborting." -ForegroundColor Red
+    Write-Host "[ERROR] engine/Dataset_Parser.py failed with exit code $LASTEXITCODE. Aborting." -ForegroundColor Red
     exit 1
 }
 Write-Host "[OK] Dataset Parser complete." -ForegroundColor Green
@@ -69,7 +70,7 @@ if (Test-Path $error_log_file) { Remove-Item $error_log_file -Force }
 
 $process_arguments = @{
     FilePath               = $python
-    ArgumentList           = @("Level_Matcher.py", "--labels") + $Labels + @("--json_dir", "data/json", "--xref", "data/raw/XREF.txt", "--figures")
+    ArgumentList           = @("engine/Level_Matcher.py", "--labels") + $Labels + @("--json_dir", $sample_json_directory, "--xref", $sample_xref_file, "--figures")
     WorkingDirectory       = $project_dir
     RedirectStandardOutput = $log_file
     RedirectStandardError  = $error_log_file
@@ -88,7 +89,7 @@ $previous_line_count = 0
 while (-not $spawned_process.HasExited) {
     Start-Sleep -Milliseconds 500
     if (Test-Path $log_file) {
-        $lines = Get-Content $log_file
+        $lines = @(Get-Content $log_file)
         if ($lines.Count -gt $previous_line_count) {
             $lines[$previous_line_count..($lines.Count - 1)] | ForEach-Object { Write-Host $_ }
             $previous_line_count = $lines.Count
@@ -98,7 +99,7 @@ while (-not $spawned_process.HasExited) {
 
 # Print any remaining lines after process exits
 if (Test-Path $log_file) {
-    $lines = Get-Content $log_file
+    $lines = @(Get-Content $log_file)
     if ($lines.Count -gt $previous_line_count) {
         $lines[$previous_line_count..($lines.Count - 1)] | ForEach-Object { Write-Host $_ }
     }
@@ -112,7 +113,7 @@ $log_has_traceback = (Test-Path $log_file) -and (Select-String -Path $log_file -
 $stderr_has_traceback = (Test-Path $error_log_file) -and ((Get-Item $error_log_file).Length -gt 0) -and (Select-String -Path $error_log_file -Pattern "Traceback" -Quiet)
 if ($log_has_traceback -or $stderr_has_traceback) {
     Write-Host ""
-    Write-Host "[ERROR] Level_Matcher.py reported an exception. Check logs:" -ForegroundColor Red
+    Write-Host "[ERROR] engine/Level_Matcher.py reported an exception. Check logs:" -ForegroundColor Red
     Write-Host "  stdout: $log_file" -ForegroundColor Red
     Write-Host "  stderr: $error_log_file" -ForegroundColor Red
     if (Test-Path $error_log_file) {
@@ -132,9 +133,9 @@ Write-Host ""
 Write-Host "======================================================" -ForegroundColor Cyan
 Write-Host " Step 3/3: Combined Visualizer" -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
-& $python "Combined_Visualizer.py" --labels $Labels --json_dir data/json --xref data/raw/XREF.txt
+& $python "engine/Combined_Visualizer.py" --labels $Labels --json_dir $sample_json_directory --xref $sample_xref_file
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Combined_Visualizer.py failed with exit code $LASTEXITCODE." -ForegroundColor Red
+    Write-Host "[ERROR] engine/Combined_Visualizer.py failed with exit code $LASTEXITCODE." -ForegroundColor Red
     exit 1
 }
 Write-Host "[OK] Visualizer complete." -ForegroundColor Green

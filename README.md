@@ -16,6 +16,17 @@ Built on the open-source XGBoost (Extreme Gradient Boosting) framework, **Level-
 
 Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
+## Quick Start (users)
+
+Level-Matcher ships as one program that users run: `Level_Matcher_GUI.py`. The programs in `engine/` are started by that window and need no attention.
+
+1. Install Python 3.11 (64-bit) and the dependencies: `pip install -r requirements.txt`.
+2. Start the interface: `python Level_Matcher_GUI.py` (from this folder), or create a shortcut that runs that command.
+3. **Browse** to the folder that holds your `.ens` files. It must contain the adopted file: its X records provide the dataset letters.
+4. Select two or more datasets in the table (Ctrl or Shift for several), optionally adjust **Parameters**, then click **Run Level Matcher**.
+
+Everything the tool writes - parsed JSON datasets, the pair report, the cluster report, `parameters.json` and the optional PNG figures - goes into one flat folder `level_matcher_files` inside the `raw` folder beside the folder you browsed to (browsing `S34/new` writes to `S34/raw/level_matcher_files`). Nothing is ever created or changed inside the folder holding your `.ens` files.
+
 ## Development Timeline
 
 - 2026-04-19: Tested and refined on real-world ENSDF datasets <sup>34</sup>Cl, <sup>34</sup>S.
@@ -28,7 +39,7 @@ Integration roadmap: A production version will be incorporated into the Consiste
 Inference-first pipeline: raw ENSDF records → standardized JSON → synthetic-trained XGBoost → pairwise probabilities → clique-constrained unified level scheme.
 
 ```text
-[Raw ENSDF] --> [Dataset_Parser] --> [data/json/]
+[Raw ENSDF] --> [Dataset_Parser] --> [developer/data/json/]
                                          |
                                          v
 [Feature_Engineer] --> [5-D Feature Extraction, Scoring_Config, Label Logic]
@@ -192,36 +203,53 @@ Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
 
 ```text
 Level-Matcher/
-├── Level_Matcher.py           # Main orchestration (Training, Inference, Clustering)
-├── Feature_Engineer.py        # Physics engine (Feature extraction, Label logic)
-├── Level_Clusterer.py         # Deterministic clique-constrained graph partitioning
-├── Dataset_Parser.py          # Regex-based ENSDF log to JSON converter
-├── Training_Metrics_Visualizer.py # Diagnostic suite (5-panel metrics plots)
-├── Combined_Visualizer.py     # Visualization suite (High-res level scheme plots)
-├── Run_Pipeline.ps1           # One-command wrapper; detached ML process for VS Code safety
-├── data/
-│   ├── raw/                   # ENSDF source files and XREF labels
-│   └── json/                  # Standardized JSON datasets consumed by the pipeline
-├── level_matcher_files/       # Pipeline results in one folder: pair report, cluster report, optional PNG figures, logs
-├── docs/                      # Documentation and technical reports
-├── scripts/
-│   ├── hyperparameter_tuning/ # Optimization and validation utilities
-│   └── legacy/                # Experimental/archive scripts
-└── README.md                  # This file
+├── Level_Matcher_GUI.py       # The only program users run (graphical interface)
+├── requirements.txt           # Python dependencies
+├── engine/                    # Programs the interface runs; not edited by users
+│   ├── Dataset_Parser.py      # Regex-based ENSDF log to JSON converter
+│   ├── Feature_Engineer.py    # Physics engine (feature extraction, label logic, Scoring_Config)
+│   ├── Level_Matcher.py       # Main orchestration (training, inference, clustering)
+│   ├── Level_Clusterer.py     # Deterministic clique-constrained graph partitioning
+│   ├── Combined_Visualizer.py # Level scheme and cluster table figures
+│   └── Training_Metrics_Visualizer.py  # Training diagnostics figure
+├── assets/                    # Window icon and logo
+├── docs/                      # User and technical documentation
+├── developer/                 # Developer material, not needed to use the tool
+│   ├── Run_Pipeline.ps1       # Sample-data pipeline; detached matcher for VS Code safety
+│   ├── validate_schema.py     # Checks parser output against ENSDF JSON Schema 1.0.0
+│   ├── angular_momentum_coupling.py      # Allowed spin-parity calculator (standalone helper)
+│   ├── Files_for_notebookLM.py           # Exports sources as .txt for NotebookLM
+│   ├── hyperparameter_tuning/ # Tuner, visualizer and their result files
+│   ├── legacy/                # Archived models and experiments
+│   ├── examples/              # Illustrative figures
+│   ├── reference/consistency/ # Java Consistency Check sources (integration roadmap)
+│   ├── reports/               # Development reports
+│   └── data/                  # Sample data: raw/ (.ens and XREF.txt), json/, ensdf_schema_1.0.0/
+├── level_matcher_files/       # Created by developer/Run_Pipeline.ps1 (generated, not tracked)
+├── README.md                  # This file
+└── LICENSE
 ```
+
+`level_matcher_files/` and `developer/data/json/` are generated at run time and are ignored by git.
 
 ---
 
 ## 7. Workflow & Usage
 
-0. **Graphical interface**: `python Level_Matcher_GUI.py`. Browse to any folder holding `.ens` files including the adopted file (its X records provide the dataset letters; `XREF.txt` is the fallback), select two or more datasets, optionally change the feature engineering (scoring) and level matcher (threshold) parameters under **Parameters** (the defaults are the values at the top of `Feature_Engineer.py` and `Level_Matcher.py`; figure layout and fonts are set at the top of `Combined_Visualizer.py`), then click Run Level Matcher. Everything the tool writes goes into one folder, `raw/level_matcher_files/`, created beside the folder you browsed to (for `S34/new` it is `S34/raw/level_matcher_files/`, no subfolders; nothing is ever created or changed inside the folder you browsed to): the parsed JSON datasets, the pair report, the cluster report and the parameters used (`parameters.json`). The PNG figures (large files) are written unless **Generate figures** is unticked under **Parameters** (on by default; the choice is remembered between sessions).
-1. **Run full pipeline (developer, uses `data/raw/`)**: `.\Run_Pipeline.ps1 -Labels L,Q,F` executes Dataset Parser → Level Matcher (detached subprocess; logs stream to `level_matcher_files/run_log.txt`) → Combined Visualizer. Results go to `level_matcher_files/` in the repository root (the graphical interface writes to `raw/level_matcher_files/` beside the folder you browsed to). Detached spawn prevents VS Code freezes.
-2. **Parse raw ENSDF files**: `Dataset_Parser.py` scans all `.ens` files in `data/raw/` and writes standardized JSON datasets to `data/json/`.
-3. **Select inference targets**: pass the XREF letters of the datasets with `--labels` (the graphical interface does this from your selection; `Run_Pipeline.ps1` takes `-Labels L,Q,F`).
-4. **Train on synthetic physics data**: `Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
+### 7.1 Users (graphical interface only)
+
+`python Level_Matcher_GUI.py`. Browse to any folder holding `.ens` files; the folder must include the adopted file, whose X records provide the dataset letters (a folder without it is refused). Then select two or more datasets, optionally change the feature engineering (scoring) and level matcher (threshold) parameters under **Parameters** (the defaults are the values at the top of `engine/Feature_Engineer.py` and `engine/Level_Matcher.py`; figure layout and fonts are set at the top of `engine/Combined_Visualizer.py`), then click Run Level Matcher. Everything the tool writes goes into one folder, `raw/level_matcher_files/`, created beside the folder you browsed to (for `S34/new` it is `S34/raw/level_matcher_files/`, no subfolders; nothing is ever created or changed inside the folder you browsed to): the parsed JSON datasets, the pair report, the cluster report and the parameters used (`parameters.json`). The PNG figures (large files) are written unless **Generate figures** is unticked under **Parameters** (on by default; the choice is remembered between sessions).
+
+### 7.2 Developers (command line)
+
+1. **Run full pipeline (sample data)**: `.\developer\Run_Pipeline.ps1 -Labels L,Q,F` executes `engine/Dataset_Parser.py` → `engine/Level_Matcher.py` (detached subprocess; logs stream to `level_matcher_files/run_log.txt`) → `engine/Combined_Visualizer.py`. Results go to `level_matcher_files/` in the repository root (the graphical interface writes to `raw/level_matcher_files/` beside the folder you browsed to). Detached spawn prevents VS Code freezes.
+2. **Parse raw ENSDF files**: `python engine/Dataset_Parser.py` scans all `.ens` files in `developer/data/raw/` and writes standardized JSON datasets to `developer/data/json/`.
+3. **Select inference targets**: pass the XREF letters of the datasets with `--labels` (the graphical interface does this from your selection; `developer/Run_Pipeline.ps1` takes `-Labels L,Q,F`).
+4. **Train on synthetic physics data**: `engine/Level_Matcher.py` generates synthetic labeled examples and trains XGBoost with early stopping and monotonic constraints.
 5. **Run real-world inference**: All cross-dataset level pairs for the selected datasets are scored; pairs at or above the output threshold are written to `level_matcher_files/Output_Level_Pairwise_Inference.txt`.
-6. **Cluster matched levels**: `Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `level_matcher_files/Output_Clustering_Results_XGBoost.txt`.
-7. **Review outputs**: `Combined_Visualizer.py` renders level schemes and the cluster table to `level_matcher_files/` for visual audit (graphical interface: unless **Generate figures** is unticked under **Parameters**).
+6. **Cluster matched levels**: `engine/Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `level_matcher_files/Output_Clustering_Results_XGBoost.txt`.
+7. **Review outputs**: `engine/Combined_Visualizer.py` renders level schemes and the cluster table to `level_matcher_files/` for visual audit (graphical interface: unless **Generate figures** is unticked under **Parameters**).
+8. **Validate parser output**: `python developer/validate_schema.py --json_dir <folder>` checks every dataset JSON file against ENSDF JSON Schema 1.0.0.
 
 ---
 
@@ -229,9 +257,10 @@ Level-Matcher/
 
 ### 8.1 Mandatory Runtime Validation
 After any code modification:
-1.  Run `.\Run_Pipeline.ps1 -Labels L,Q` (parser, detached matcher, visualizer) and confirm it finishes without errors; do not run `Level_Matcher.py` directly in the VS Code terminal.
+1.  Run `.\developer\Run_Pipeline.ps1 -Labels L,Q` (parser, detached matcher, visualizer) and confirm it finishes without errors; do not run `engine/Level_Matcher.py` directly in the VS Code terminal.
 2.  Check `level_matcher_files/Training_Metrics_Diagnostic.png` for overfitting flags.
 3.  Check the other figures in `level_matcher_files/` for visual output integrity.
+4.  Run the graphical interface on a temporary copy of a dataset folder to confirm the user workflow (scan, run, figures on and off).
 
 ### 8.2 Coding Protocols
 - **No Acronyms**: Variables must be fully spelled out (e.g., `energy_uncertainty` not `ener_uncert`).

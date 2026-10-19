@@ -155,7 +155,7 @@ XGBoost Training Complete (stopped at iteration 540/1000)
 
 **Feature Importance Deep Dive**: XGBoost's Gain metric measures total loss reduction when a feature is used for splits across all trees. Higher Gain means the feature provides more discriminative power. For nuclear data matching, expected hierarchy: Spin_Similarity (highest Gain) > Parity_Similarity > Energy_Similarity > Gamma_Decay_Pattern_Similarity > Specificity (lowest Gain), reflecting physics constraints where quantum numbers are more definitive than energies.
 
-**Automated Visualization**: The `Training_Metrics_Visualizer.py` module generates comprehensive diagnostic plots:
+**Automated Visualization**: The engine/Training_Metrics_Visualizer.py module generates comprehensive diagnostic plots:
 - 5-panel layout: RMSE comparison, MAE comparison, LogLoss comparison, Feature Importance (Gain), Overfitting Gap Analysis
 - Color-coded quality indicators (green/yellow/red thresholds)
 - Iteration count annotations showing convergence efficiency
@@ -169,8 +169,8 @@ Feature engineering is the process of transforming raw data into meaningful inpu
 
 Well-engineered features can significantly boost model performance, leading to improved accuracy and predictive power. XGBoost is capable of handling complex data relationships.
 
-Feature_Engineer.py
+engine/Feature_Engineer.py
 
 ### Model Configuration
 
-Level_Matcher.py
+engine/Level_Matcher.py

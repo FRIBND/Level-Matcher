@@ -63,8 +63,8 @@ Follow these protocols without exception:
 
 - **Never use `| head` in PowerShell.** It is not a valid cmdlet and crashes the command. Use `| Select-Object -First N` instead.
 - **Never run `plt.show()` from the integrated terminal.** Matplotlib GUI windows can crash VS Code. All figures must be saved with `plt.savefig()`.
-- **Never run Level_Matcher.py directly in the integrated terminal.** It trains ML models and consumes excessive memory. Use the detached subprocess architecture: run the separate launcher script from the VS Code terminal which isolates the heavy process.
-- **Dataset_Parser.py is safe to run directly:** `python Dataset_Parser.py`. It is lightweight and writes JSON to `data/json/`. No GUI output.
+- **Never run engine/Level_Matcher.py directly in the integrated terminal.** It trains ML models and consumes excessive memory. Use the detached subprocess architecture: run the separate launcher script from the VS Code terminal which isolates the heavy process.
+- **engine/Dataset_Parser.py is safe to run directly:** `python engine/Dataset_Parser.py` from the repository root. It is lightweight and writes JSON to `developer/data/json/`. No GUI output.
 - **Redirect output for large scripts:** `python script.py > output.txt` to avoid buffer overflow in the VS Code terminal panel.
 
 ## Communication and Execution Standards

@@ -29,7 +29,7 @@ Numbered Technical Steps:
 Module Purpose:
 This module implements a Constrained Graph Partitioning algorithm to reconcile matched level pairs into coherent physical levels.
 
-ALGORITHM CLASSIFICATION & COMPARISON:
+Algorithm Classification & Comparison:
 --------------------------------------
 This module is NOT traditional unsupervised Machine Learning clustering (e.g., discovering communities in raw data). It is a deterministic, rule-based partitioning engine.
 

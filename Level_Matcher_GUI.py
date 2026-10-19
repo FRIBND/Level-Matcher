@@ -5,18 +5,21 @@ Level Matcher Graphical Interface
 # High-level Structure and Workflow Explanation:
 ======================================
 
-The user picks a workspace folder that holds their own ENSDF .ens files, including the adopted file whose X records list the dataset letters (XREF.txt is the fallback).
+The user picks a workspace folder that holds their own ENSDF .ens files. The folder must contain the adopted file: its X records list the dataset letters used to match each .ens file to its XREF letter.
 Every file the tool writes (parsed JSON, parameters.json, reports and optional figures) goes into one folder named
 level_matcher_files in the raw folder beside the workspace folder, without subfolders
 (for example workspace .../S34/new -> .../S34/raw/level_matcher_files). Nothing is ever created or changed inside the workspace
-folder itself (it holds the user's .ens files), and the tool never reads from or writes to the tool's own data/raw folder.
+folder itself (it holds the user's .ens files).
+
+This file is the only program the user runs: start it with `python Level_Matcher_GUI.py` (or a shortcut to it). The six programs
+in engine/ are started by this window as subprocesses and are not meant to be edited or run by hand.
 
 Workflow Diagram:
 
   [Browse: workspace folder]
             |
             v
-  Dataset_Parser.py (subprocess, automatic) --> [<workspace parent>/raw/level_matcher_files/{nuclide}_{XREF}.json]
+  Dataset_Parser.py (engine/, subprocess, automatic) --> [<workspace parent>/raw/level_matcher_files/{nuclide}_{XREF}.json]
             |
             v
   [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
@@ -30,25 +33,25 @@ Workflow Diagram:
                       [Run Level Matcher]  (saves level_matcher_files/parameters.json)
                                |
                                v
-  Level_Matcher.py (--parameters) --> Combined_Visualizer.py (unless Generate figures is unticked) --> [<workspace parent>/raw/level_matcher_files/]
+  engine/Level_Matcher.py (--parameters) --> engine/Combined_Visualizer.py (unless Generate figures is unticked) --> [<workspace parent>/raw/level_matcher_files/]
             |
             v
   [Live log panel]
 
 Numbered Technical Steps:
-1. Workspace selection: the user chooses the folder containing .ens files; the XREF list is read from the adopted .ens file there.
+1. Workspace selection: the user chooses the folder containing .ens files; the dataset letters are read from the X records of the adopted .ens file there (a folder without an adopted file is refused).
    The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
-2. Automatic scan: Dataset_Parser.py converts every .ens file to JSON inside <workspace parent>/raw/level_matcher_files
+2. Automatic scan: engine/Dataset_Parser.py converts every .ens file to JSON inside <workspace parent>/raw/level_matcher_files
    (created if missing; earlier parser output there is deleted first, other files are left alone); the parser log
    builds the dataset list. The workspace folder itself is only read.
 3. Selection: at least two datasets are required for cross-dataset matching.
-4. Parameters: the dialog has an input box for each scoring parameter at the top of Feature_Engineer.py (listed first) and for
-   each threshold at the top of Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
+4. Parameters: the dialog has an input box for each scoring parameter at the top of engine/Feature_Engineer.py (listed first) and for
+   each threshold at the top of engine/Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
    box shows what the parameter does), plus the Generate figures option (on by default; its default is set in this file).
-   Figure layout and fonts are not in the dialog (edit the top of Combined_Visualizer.py). Changed values are saved in settings.json.
+   Figure layout and fonts are not in the dialog (edit the top of engine/Combined_Visualizer.py). Changed values are saved in settings.json.
 5. Run: matcher and visualizer run as subprocesses so training never freezes the window; the matcher receives all parameter
    values with --parameters (saved as level_matcher_files/parameters.json) and every run streams its output to the log.
-   Unless Generate figures is unticked in the Parameters dialog, --figures is added for the matcher and Combined_Visualizer.py
+   Unless Generate figures is unticked in the Parameters dialog, --figures is added for the matcher and engine/Combined_Visualizer.py
    runs afterwards; when unticked no PNG file is written.
 6. Results: the pair report and the cluster report (plus the PNG figures when enabled) are written to the same level_matcher_files folder.
 
@@ -57,7 +60,7 @@ Architecture:
   for the entry, dataset table rows and log; DPI aware, so pixel sizes follow the Windows display scale). Layout top to bottom:
   workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Run Level Matcher), log, footer (status text | small FRIB logo).
   The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
-- `read_script_defaults`: Reads parameter defaults from the top of the scripts without importing them.
+- `read_script_defaults`: Reads parameter defaults from the top of the engine scripts without importing them.
 - `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | parameter | value | default. Feature engineering
   parameters come first, then level matcher parameters. It opens beside the main window with the same height and top edge; a
   scrollbar appears only when the rows do not fit that height. Has validation and Reset to Defaults.
@@ -81,6 +84,7 @@ import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, ttk
 
 project_directory = os.path.dirname(os.path.abspath(__file__))
+engine_directory = os.path.join(project_directory, "engine")  # Programs this window runs in subprocesses; users never edit them
 output_folder_name = "level_matcher_files"  # Created in the raw folder beside the workspace folder, never inside it; holds every file the tool writes (no subfolders)
 
 # Parameters of the Parameters dialog. Row = (key path, label, kind, minimum, maximum, meaning); kind is float, int, bool or a tuple of choices.
@@ -150,7 +154,7 @@ def read_script_defaults(key_paths):
     top_level_names = {key_path.split(".")[0] for key_path in key_paths}
     top_level_values = {}
     for script_name in ("Level_Matcher.py", "Feature_Engineer.py"):
-        with open(os.path.join(project_directory, script_name), "r", encoding="utf-8") as script_file:
+        with open(os.path.join(engine_directory, script_name), "r", encoding="utf-8") as script_file:
             for node in ast.parse(script_file.read()).body:
                 if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id in top_level_names:
                     top_level_values[node.targets[0].id] = ast.literal_eval(node.value)
@@ -500,13 +504,16 @@ class Level_Matcher_Interface:
             return
         self.dataset_records = []
         self.dataset_table.delete(*self.dataset_table.get_children())
-        # The adopted dataset file begins with the XREF (X records) letter list; fall back to XREF.txt.
+        # The adopted dataset file begins with the XREF (X records) letter list; it is required, there is no substitute
         adopted_files = sorted(name for name in os.listdir(workspace_path) if "adopted" in name.lower() and name.endswith(".ens"))
-        xref_path = os.path.join(workspace_path, adopted_files[0] if adopted_files else "XREF.txt")
-        self.xref_path = xref_path
-        command = [sys.executable, os.path.join(project_directory, "Dataset_Parser.py"),
+        if not adopted_files:
+            messagebox.showerror("Workspace", "This folder has no adopted .ens file. The adopted file lists the dataset letters (XREF) and is required.")
+            self.status_variable.set("No adopted .ens file in the selected folder.")
+            return
+        self.xref_path = os.path.join(workspace_path, adopted_files[0])
+        command = [sys.executable, os.path.join(engine_directory, "Dataset_Parser.py"),
                    "--raw_dir", workspace_path,
-                   "--xref", xref_path,
+                   "--xref", self.xref_path,
                    "--output_dir", self.get_output_directory(workspace_path)]
         self.status_variable.set("Scanning workspace...")
 
@@ -549,10 +556,10 @@ class Level_Matcher_Interface:
                             "--xref", self.xref_path,
                             "--json_dir", output_directory,
                             "--output_dir", output_directory]
-        commands = [[sys.executable, os.path.join(project_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path]]
+        commands = [[sys.executable, os.path.join(engine_directory, "Level_Matcher.py"), *shared_arguments, "--parameters", parameters_path]]
         if self.parameter_values["generate_figures"]:
             commands[0].append("--figures")
-            commands.append([sys.executable, os.path.join(project_directory, "Combined_Visualizer.py"), *shared_arguments])
+            commands.append([sys.executable, os.path.join(engine_directory, "Combined_Visualizer.py"), *shared_arguments])
         self.status_variable.set("Running Level Matcher (model training may take a few seconds)...")
 
         def finish_run(succeeded):

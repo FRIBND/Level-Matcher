@@ -71,7 +71,7 @@ Step 5: Constrained Clustering (Graph Partitioning)
   Input: Candidate match probabilities from Step 4
   Process: Enforce clique consistency and dataset uniqueness constraints
   Function: Level_Clusterer.perform_clustering_and_output()
-  Output: Final unified level scheme reconciling datasets A, B, and C
+  Output: Final unified level scheme reconciling the selected datasets
 """
 
 # ==========================================

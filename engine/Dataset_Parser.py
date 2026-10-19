@@ -26,7 +26,7 @@ Workflow Diagram:
                       [{nuclide}_{XREF text}.json in --output_dir]
 
 Technical Steps:
-1. Output folder: every existing file in it is deleted first.
+1. Output folder: JSON files from an earlier parser run (names matching a dataset of this run) are deleted first; other files are kept.
 2. XREF: the X records (col 8 'X', col 9 letter, cols 10+ dataset name) give letter -> name. The adopted file is skipped.
 3. Dataset match: the first-line name (cols 10-39) must equal an XREF name after markup removal ("{+33}S" -> "33S") and
    uppercasing. No match: the file is skipped with a warning.
@@ -1010,20 +1010,23 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
 
 
 if __name__ == "__main__":
+    # The bundled sample data lives in developer/data, so the defaults work from any working directory
+    repository_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sample_raw_directory = os.path.join(repository_root, "developer", "data", "raw")
     argument_parser = argparse.ArgumentParser(
         description="Parse ENSDF .ens files into structured JSON datasets."
     )
     argument_parser.add_argument(
-        "--raw_dir", default="data/raw",
-        help="Directory containing .ens input files (default: data/raw)"
+        "--raw_dir", default=sample_raw_directory,
+        help="Directory containing .ens input files (default: developer/data/raw)"
     )
     argument_parser.add_argument(
-        "--xref", default="data/raw/XREF.txt",
-        help="Path to XREF.txt dataset label file (default: data/raw/XREF.txt)"
+        "--xref", default=os.path.join(sample_raw_directory, "XREF.txt"),
+        help="Path to XREF.txt dataset label file (default: developer/data/raw/XREF.txt)"
     )
     argument_parser.add_argument(
-        "--output_dir", default="data/json",
-        help="Directory for output JSON files (default: data/json)"
+        "--output_dir", default=os.path.join(repository_root, "developer", "data", "json"),
+        help="Directory for output JSON files (default: developer/data/json)"
     )
     args = argument_parser.parse_args()
     convert_ens_files_to_datasets(args.raw_dir, args.xref, args.output_dir)

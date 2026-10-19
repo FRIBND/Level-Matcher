@@ -15,3 +15,11 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated results
+level_matcher_files/
+outputs/
+
+# Generated developer artifacts
+developer/notebook_files/
+developer/data/json/
