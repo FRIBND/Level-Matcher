@@ -21,5 +21,4 @@ level_matcher_files/
 outputs/
 
 # Generated developer artifacts
-developer/notebook_files/
 developer/data/json/

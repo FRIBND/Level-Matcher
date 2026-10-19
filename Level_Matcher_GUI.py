@@ -61,9 +61,9 @@ Architecture:
   workspace row, dataset table, action bar (Select All, Clear Selection | Parameters, Run Level Matcher), log, footer (status text | small FRIB logo).
   The title bar icon is the FRIB emblem (assets/frib_logo.ico, multi-size).
 - `read_script_defaults`: Reads parameter defaults from the top of the engine scripts without importing them.
-- `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | parameter | value | default. Feature engineering
-  parameters come first, then level matcher parameters. It opens beside the main window with the same height and top edge; a
-  scrollbar appears only when the rows do not fit that height. Has validation and Reset to Defaults.
+- `open_parameter_dialog`: One fixed-size panel with a row for every parameter: group | name | input | default. Feature engineering
+  parameters come first (input column headed Label), then level matcher parameters (headed Probability). It opens beside the main
+  window with the same height and top edge; a scrollbar appears only when the rows do not fit that height. Has validation and Reset to Defaults.
 - `save_settings`: Writes the last workspace and the changed parameter values to settings.json.
 - `browse_workspace`: Folder chooser; triggers the scan.
 - `scan_workspace`: Starts the parser subprocess and populates the dataset list.
@@ -91,7 +91,7 @@ output_folder_name = "level_matcher_files"  # Created in the raw folder beside t
 # Feature engineering parameters (Feature_Engineer.py) come first, then the level matcher parameters (Level_Matcher.py); the scripts stay the source of the defaults
 # (except the options in interface_option_defaults below).
 parameter_sections = [
-    ("Feature Engineering", [
+    ("Feature Engineering", "Label", [
         ("Energy", [
             ("Scoring_Config.Energy.Sigma_Scale", "Energy kernel width (larger = stricter)", float, 0.001, 10.0,
              "Energy score = exp(-value x z^2), z = energy difference in combined uncertainties. Larger is stricter.")]),
@@ -134,7 +134,7 @@ parameter_sections = [
              "Training rule: rescue triggers when the spin and parity scores, or the gamma score, reach this value."),
             ("Scoring_Config.Feature_Correlation.Rescue_Exponent", "Energy boost exponent (1 = none)", float, 0.1, 1.0,
              "Training rule: on rescue the energy score is raised to this power; 0.5 is a strong boost, 1 is none.")])]),
-    ("Level Matcher", [
+    ("Level Matcher", "Probability", [
         ("Thresholds", [
             ("pairwise_output_threshold", "Pair report minimum probability", float, 0.0, 1.0,
              "Pairs with a lower match probability are left out of the pair report and the clustering."),
@@ -144,7 +144,7 @@ parameter_sections = [
             ("generate_figures", "Generate figures", bool, None, None,
              "Writes the PNG figures (level schemes, cluster table, training diagnostics) next to the results; they can be several megabytes. Untick to skip them.")])]),
 ]
-parameter_rows = {row[0]: row for _, groups in parameter_sections for _, rows in groups for row in rows}
+parameter_rows = {row[0]: row for _, _, groups in parameter_sections for _, rows in groups for row in rows}
 # Options owned by the interface itself: they appear in the dialog like parameters but are not variables of the scripts
 interface_option_defaults = {"generate_figures": True}
 
@@ -346,14 +346,14 @@ class Level_Matcher_Interface:
         help_label = tk.Label(dialog, textvariable=help_variable, anchor="nw", justify="left", height=3)
         help_label.pack(fill="x", padx=14, pady=(8, 4))
 
-        # Rows: group | parameter | value | default; the group name stands on the first row of its group
+        # Rows: group | item | input | default; each section heads its own input column (Label, Probability)
         variables = {}
         grid_row = 0
-        for section_index, (section_title, groups) in enumerate(parameter_sections):
+        for section_index, (section_title, input_heading, groups) in enumerate(parameter_sections):
             ttk.Label(inner, text=section_title, font=section_font).grid(row=grid_row, column=0, columnspan=2, sticky="sw", pady=(12 if section_index else 0, 2))
-            if section_index == 0:  # the Value and Default headings stand once, in the first section heading row
-                for column_index, header_text in ((2, "Value"), (3, "Default")):
-                    ttk.Label(inner, text=header_text, font=group_font).grid(row=grid_row, column=column_index, sticky="sw", padx=8, pady=(0, 2))
+            ttk.Label(inner, text=input_heading, font=group_font).grid(row=grid_row, column=2, sticky="sw", padx=8, pady=(0, 2))
+            if section_index == 0:  # the Default heading stands once, in the first section heading row
+                ttk.Label(inner, text="Default", font=group_font).grid(row=grid_row, column=3, sticky="sw", padx=8, pady=(0, 2))
             ttk.Separator(inner, orient="horizontal").grid(row=grid_row + 1, column=0, columnspan=4, sticky="ew", pady=(0, 2))
             grid_row += 2
             for group_index, (group_title, rows) in enumerate(groups):

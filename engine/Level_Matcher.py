@@ -316,8 +316,8 @@ if __name__ == "__main__":
             energy_similarity, spin_similarity, parity_similarity, specificity, gamma_decay_pattern_similarity = item['features']
             output_file.write(
                 f"{item['level_1_id']} <-> {item['level_2_id']} | "
-                f"XGBoost: {item['xgboost_probability']:.1%}\n"
-                f"  Features: Energy_Similarity={energy_similarity:.2f}, Spin_Similarity={spin_similarity:.2f}, "
+                f"Match Prob.: {item['xgboost_probability']:.1%} | "
+                f"Features: Energy_Similarity={energy_similarity:.2f}, Spin_Similarity={spin_similarity:.2f}, "
                 f"Parity_Similarity={parity_similarity:.2f}, Specificity={specificity:.2f}, Gamma_Pattern_Similarity={gamma_decay_pattern_similarity:.2f}\n\n"
             )
     

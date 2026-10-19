@@ -218,7 +218,6 @@ Level-Matcher/
 │   ├── Run_Pipeline.ps1       # Sample-data pipeline; detached matcher for VS Code safety
 │   ├── validate_schema.py     # Checks parser output against ENSDF JSON Schema 1.0.0
 │   ├── angular_momentum_coupling.py      # Allowed spin-parity calculator (standalone helper)
-│   ├── Files_for_notebookLM.py           # Exports sources as .txt for NotebookLM
 │   ├── hyperparameter_tuning/ # Tuner, visualizer and their result files
 │   ├── legacy/                # Archived models and experiments
 │   ├── examples/              # Illustrative figures
