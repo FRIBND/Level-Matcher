@@ -53,7 +53,7 @@ Level-Matcher ships as one program that users run: `Level_Matcher_GUI.py`. The p
 1. Install Python 3.11 and the dependencies first (see **Requirements and Installation** above).
 2. Start the interface: `python Level_Matcher_GUI.py` (from this folder), or create a shortcut that runs that command.
 3. **Browse** to the folder that holds your `.ens` files. It must contain the adopted file: its X records provide the dataset letters.
-4. Select two or more datasets in the table (Ctrl or Shift for several), optionally adjust **Parameters**, then click **Run Level Matcher**.
+4. Select two or more datasets in the table (Ctrl or Shift for several), optionally adjust **Parameters**, then click **Run Level Matcher**. The table lists each dataset with Letter, XREF reaction, data file, and Levels, the number of levels parsed from that file's L records.
 
 Everything the tool writes - parsed JSON datasets, the pair report, the cluster report, `parameters.json` and the optional PNG figures - goes into one flat folder `level_matcher_files` inside the `raw` folder beside the folder you browsed to (browsing `S34/new` writes to `S34/raw/level_matcher_files`). Nothing is ever created or changed inside the folder holding your `.ens` files.
 

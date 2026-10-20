@@ -22,7 +22,7 @@ Workflow Diagram:
   Dataset_Parser.py (engine/, subprocess, automatic) --> [<workspace parent>/raw/level_matcher_files/{nuclide}_{XREF}.json]
             |
             v
-  [Dataset table: Letter | XREF | ENSDF data file]  <-- parsed from the parser log
+  [Dataset table: Letter | XREF | ENSDF data file | Levels]  <-- parsed from the parser log
             |
             v
   [User selects two or more datasets]      [Parameters dialog: feature engineering, level matcher]
@@ -43,7 +43,7 @@ Numbered Technical Steps:
    The last folder is saved in %APPDATA%/Level_Matcher/settings.json and reopened and rescanned at the next start.
 2. Automatic scan: engine/Dataset_Parser.py converts every .ens file to JSON inside <workspace parent>/raw/level_matcher_files
    (created if missing; earlier parser output there is deleted first, other files are left alone); the parser log
-   builds the dataset list. The workspace folder itself is only read.
+   builds the dataset list, including the number of levels parsed from the L records of each dataset. The workspace folder itself is only read.
 3. Selection: at least two datasets are required for cross-dataset matching.
 4. Parameters: the dialog has an input box for each scoring parameter at the top of engine/Feature_Engineer.py (listed first) and for
    each threshold at the top of engine/Level_Matcher.py (defaults are read from those files; values are range-checked; pointing at a
@@ -201,6 +201,7 @@ class Level_Matcher_Interface:
         self.log_queue = queue.Queue()
         self.is_busy = False
         self.dataset_records = []  # One dictionary per detected dataset: letter, filename, reaction
+        self.dataset_level_counts = {}  # Parsed level count per dataset letter, read from the parser log
         self.xref_path = ""
 
         # Settings remembered between sessions: last workspace folder and the parameter values changed from the defaults
@@ -236,17 +237,19 @@ class Level_Matcher_Interface:
         self.browse_button = ttk.Button(workspace_frame, text="Browse", command=self.browse_workspace)
         self.browse_button.pack(side="left", padx=5, pady=5)
 
-        # 2. Dataset selection table: Letter | XREF reaction | data file
+        # 2. Dataset selection table: Letter | XREF reaction | data file | number of levels
         dataset_frame = ttk.LabelFrame(root_window, text="Select datasets to match levels (Ctrl or Shift for multiple)")
         dataset_frame.pack(fill="both", expand=True, padx=10, pady=5)
-        self.dataset_table = ttk.Treeview(dataset_frame, columns=("letter", "reaction", "filename"), show="headings",
+        self.dataset_table = ttk.Treeview(dataset_frame, columns=("letter", "reaction", "filename", "levels"), show="headings",
                                           selectmode="extended", height=8)
         self.dataset_table.heading("letter", text="Letter", anchor="w")
         self.dataset_table.heading("reaction", text="XREF", anchor="w")
         self.dataset_table.heading("filename", text="ENSDF data file", anchor="w")
+        self.dataset_table.heading("levels", text="Levels", anchor="w")
         self.dataset_table.column("letter", width=int(70 * display_scale), stretch=False, anchor="w")
         self.dataset_table.column("reaction", width=int(300 * display_scale), stretch=False, anchor="w")
-        self.dataset_table.column("filename", width=int(420 * display_scale), stretch=True, anchor="w")
+        self.dataset_table.column("filename", width=int(380 * display_scale), stretch=True, anchor="w")
+        self.dataset_table.column("levels", width=int(60 * display_scale), stretch=False, anchor="w")
         dataset_scrollbar = ttk.Scrollbar(dataset_frame, orient="vertical", command=self.dataset_table.yview)
         self.dataset_table.configure(yscrollcommand=dataset_scrollbar.set)
         self.dataset_table.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
@@ -488,6 +491,10 @@ class Level_Matcher_Interface:
                     self.dataset_records.append({
                         "filename": parser_match.group(1), "letter": parser_match.group(2),
                         "reaction": parser_match.group(3)})
+                # The parser prints this fixed line right after saving a dataset; the wording is not decoration
+                level_count_match = re.match(r"Levels in dataset (\w): (\d+)$", payload)
+                if level_count_match:
+                    self.dataset_level_counts[level_count_match.group(1)] = int(level_count_match.group(2))
             else:
                 succeeded, on_finished = payload
                 self.set_busy(False)
@@ -499,10 +506,13 @@ class Level_Matcher_Interface:
     # Button callbacks
     # ------------------------------------------------------------------
     def scan_workspace(self):
+        if self.is_busy:  # A running scan must not be restarted halfway, or two logs would mix their dataset records
+            return
         workspace_path = self.get_workspace()
         if workspace_path is None:
             return
         self.dataset_records = []
+        self.dataset_level_counts = {}
         self.dataset_table.delete(*self.dataset_table.get_children())
         # The adopted dataset file begins with the XREF (X records) letter list; it is required, there is no substitute
         adopted_files = sorted(name for name in os.listdir(workspace_path) if "adopted" in name.lower() and name.endswith(".ens"))
@@ -519,7 +529,9 @@ class Level_Matcher_Interface:
 
         def finish_scan(succeeded):
             for record in sorted(self.dataset_records, key=lambda item: item["letter"]):
-                self.dataset_table.insert("", "end", values=(record["letter"], record["reaction"], record["filename"]))
+                level_count = self.dataset_level_counts.get(record["letter"])
+                self.dataset_table.insert("", "end", values=(record["letter"], record["reaction"], record["filename"],
+                                                             "-" if level_count is None else level_count))
             if not succeeded:
                 self.status_variable.set("Scan failed. See log.")
             elif not self.dataset_records:

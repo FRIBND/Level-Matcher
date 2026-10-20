@@ -1006,7 +1006,10 @@ def convert_ens_files_to_datasets(raw_dir, xref_path, output_dir):
         output_path = os.path.join(os.path.abspath(output_dir), output_filename)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output_data_structure, f, indent=4)
-        print(f"Dataset {letter} saved to {output_path}")
+        plural_suffix = "" if len(level_list) == 1 else "s"
+        print(f"Dataset {letter} saved to {output_path} ({len(level_list)} level{plural_suffix})")
+        # Fixed wording on purpose: the graphical interface reads the count from this exact line
+        print(f"Levels in dataset {letter}: {len(level_list)}")
 
 
 if __name__ == "__main__":
