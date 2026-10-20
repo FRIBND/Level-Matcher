@@ -16,11 +16,41 @@ Built on the open-source XGBoost (Extreme Gradient Boosting) framework, **Level-
 
 Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
+## Requirements and Installation
+
+Level-Matcher runs on Python 3.11 (64-bit). The graphical interface itself needs only the Python standard library; the programs it starts in `engine/` need the scientific stack, including **XGBoost**. It has been tested on Windows 10/11; the programs in `engine/` are plain Python and also run on Linux and macOS from the command line (untested).
+
+1. Install Python 3.11 (64-bit) from [python.org](https://www.python.org/downloads/) and confirm that `python` and `pip` work:
+   ```bash
+   python --version
+   pip --version
+   ```
+2. Install the runtime dependencies (XGBoost is required for the matcher):
+   ```bash
+   pip install xgboost pandas numpy scikit-learn matplotlib
+   ```
+   or install from the bundled list, which holds the same runtime packages plus the developer extras:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Only for the developer tools in `developer/` (schema validation):
+   ```bash
+   pip install jsonschema referencing
+   ```
+4. Check the installation:
+   ```bash
+   python -c "import pandas, numpy, xgboost, sklearn, matplotlib; print(xgboost.__version__)"
+   ```
+
+Tested versions: pandas 2.3.3, numpy 2.2.6, xgboost 3.1.2, scikit-learn 1.8.0, matplotlib 3.10.3, jsonschema 4.25.1, referencing 0.36.2.
+
+Without XGBoost the matcher stops with `ModuleNotFoundError: No module named 'xgboost'`, which appears in the log panel.
+
 ## Quick Start (users)
 
 Level-Matcher ships as one program that users run: `Level_Matcher_GUI.py`. The programs in `engine/` are started by that window and need no attention.
 
-1. Install Python 3.11 (64-bit) and the dependencies: `pip install -r requirements.txt`.
+1. Install Python 3.11 and the dependencies first (see **Requirements and Installation** above).
 2. Start the interface: `python Level_Matcher_GUI.py` (from this folder), or create a shortcut that runs that command.
 3. **Browse** to the folder that holds your `.ens` files. It must contain the adopted file: its X records provide the dataset letters.
 4. Select two or more datasets in the table (Ctrl or Shift for several), optionally adjust **Parameters**, then click **Run Level Matcher**.
@@ -39,7 +69,7 @@ Everything the tool writes - parsed JSON datasets, the pair report, the cluster 
 Inference-first pipeline: raw ENSDF records → standardized JSON → synthetic-trained XGBoost → pairwise probabilities → clique-constrained unified level scheme.
 
 ```text
-[Raw ENSDF] --> [Dataset_Parser] --> [developer/data/json/]
+[Raw ENSDF] --> [Dataset_Parser] --> [parsed JSON datasets]
                                          |
                                          v
 [Feature_Engineer] --> [5-D Feature Extraction, Scoring_Config, Label Logic]
@@ -165,13 +195,31 @@ Nuclear level schemes typically contain fewer than 500 levels. Algorithms like L
 - **Red Flag (Overfitting)**: Large gap (>0.05 RMSE) between training and validation.
 - **Red Flag (Underfitting)**: High validation RMSE (>0.3) or stopping at iteration 1.
 
+### 3.4 Training Configuration
+
+`engine/Level_Matcher.py` trains one XGBoost regressor with `objective='binary:logistic'` and monotone-increasing constraints on all five features (`monotone_constraints='(1, 1, 1, 1, 1)'`), so a higher feature score can never lower the predicted probability.
+
+| Setting | Value | Purpose |
+| :--- | :--- | :--- |
+| `n_estimators` | 2000 | upper bound; early stopping decides the actual number of trees |
+| `max_depth` | 5 | captures veto, rescue and specificity interactions |
+| `learning_rate` | 0.02 | shrinkage per tree |
+| `reg_lambda` | 3.0 | L2 regularization on leaf weights |
+| `subsample` | 0.8 | row sampling per tree |
+| `min_child_weight` | 5 | minimum leaf sample weight |
+| `early_stopping_rounds` | 50 | stops when validation RMSE stops improving |
+| `random_state` | 42 | reproducible split and training |
+| `test_size` | 0.2 | validation share of the synthetic set |
+
+The training diagnostic figure (RMSE, MAE and LogLoss comparison, feature gain, overfit gap) is written only when **Generate figures** is enabled.
+
 ---
 
 ## 4. Physics-Informed Feature Engineering
 
 `Feature_Engineer.py` converts every candidate level pair into a 5-D feature vector (ordered: Energy, Spin, Parity, Specificity, Gamma). All scores live in $[0,1]$ and are monotonic (higher = stronger match evidence):
 
-1. **Energy_Similarity**: Gaussian kernel $\exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$ with $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$. `Sigma_Scale` = 0.6 (default: 1σ→55%, 2σ→9%, 3σ→0.5%). Missing energy → 0.0.
+1. **Energy_Similarity**: Gaussian kernel $\exp\left(-\sigma_{\text{scale}} \cdot Z^2\right)$ with $Z = \frac{|E_1 - E_2|}{\sqrt{\sigma_1^2 + \sigma_2^2}}$. `Sigma_Scale` = 0.5 (default: 1σ→60.7%, 2σ→13.5%, 3σ→1.1%). Missing energy → 0.0.
 2. **Spin_Similarity**: Optimistic max over all spin pairings. Same spin, both firm→1.0, same spin, any tentative→0.8, spin differs by 1, any tentative→0.2, spin differs by 1, both firm→0.05, spin differs by 2 or more→0.0.
 3. **Parity_Similarity**: Optimistic max over all parity pairings. Same firm→1.0, same tentative→0.8, opposite tentative→0.05, opposite firm→0.0.
 4. **Specificity**: Ambiguity penalty $1/f(\text{multiplicity})$, where multiplicity = product of both levels' spin-option counts. Selectable formulas: `sqrt` (default), `linear`, `log`, `tunable`.
@@ -187,6 +235,34 @@ Missing spin/parity/gamma data → `Neutral_Score` = 0.5.
 - **Physics Veto**: spin $\le$ 0.04 or parity $\le$ 0.04 (definitive quantum mismatch, `Spin_Veto_Max`/`Parity_Veto_Max`) → label 0.0.
 - **Physics Rescue**: (spin ≥ 0.86 and parity ≥ 0.86) or gamma ≥ 0.86 → energy similarity$^{0.5}$ (calibration-offset rescue). Raw scores tested, so "unknown" never triggers.
 - **Final Formula**: $\text{label} = \text{clamp}\left(E_{\text{eff}} \cdot \sqrt{S_{\text{eff}} \cdot P_{\text{eff}} \cdot G_{\text{eff}}} \cdot \text{Specificity},\ 0,\ 0.999\right)$
+
+### 4.2 Parameter Defaults
+
+Every value below is editable in the **Parameters** dialog. The defaults are read from the top of `engine/Feature_Engineer.py` and `engine/Level_Matcher.py`; the dialog checks the range and stores only values changed from the defaults in `%APPDATA%\Level_Matcher\settings.json`.
+
+| Section | Parameter (dialog label) | Key | Default | Range |
+| :--- | :--- | :--- | :--- | :--- |
+| Feature Engineering | Energy kernel width (larger = stricter) | `Scoring_Config.Energy.Sigma_Scale` | 0.5 | 0.001 to 10 |
+| | Same spin, both firm | `Scoring_Config.Spin.Match_Firm` | 1.0 | 0 to 1 |
+| | Same spin, any tentative | `Scoring_Config.Spin.Match_Strong` | 0.8 | 0 to 1 |
+| | Spin differs by 1, any tentative | `Scoring_Config.Spin.Mismatch_Weak` | 0.2 | 0 to 1 |
+| | Spin differs by 1, both firm | `Scoring_Config.Spin.Mismatch_Strong` | 0.05 | 0 to 1 |
+| | Spin differs by 2 or more | `Scoring_Config.Spin.Mismatch_Firm` | 0.0 | 0 to 1 |
+| | Same parity, both firm | `Scoring_Config.Parity.Match_Firm` | 1.0 | 0 to 1 |
+| | Same parity, any tentative | `Scoring_Config.Parity.Match_Strong` | 0.8 | 0 to 1 |
+| | Opposite parity, any tentative | `Scoring_Config.Parity.Mismatch_Weak` | 0.05 | 0 to 1 |
+| | Opposite parity, both firm | `Scoring_Config.Parity.Mismatch_Firm` | 0.0 | 0 to 1 |
+| | Formula | `Scoring_Config.Specificity.Formula` | sqrt | sqrt, linear, log, tunable |
+| | Alpha (tunable formula only) | `Scoring_Config.Specificity.Alpha` | 0.5 | 0 to 100 |
+| | Missing-data score (0.5 to 1) | `Scoring_Config.General.Neutral_Remap_Factor` | 0.85 | 0.5 to 1 |
+| | Spin veto (reject if score is at most) | `Scoring_Config.Label.Spin_Veto_Max` | 0.04 | 0 to 1 |
+| | Parity veto (reject if score is at most) | `Scoring_Config.Label.Parity_Veto_Max` | 0.04 | 0 to 1 |
+| | Enabled | `Scoring_Config.Feature_Correlation.Enabled` | on | on or off |
+| | Score that triggers rescue | `Scoring_Config.Feature_Correlation.Rescue_Threshold` | 0.86 | 0 to 1 |
+| | Energy boost exponent (1 = none) | `Scoring_Config.Feature_Correlation.Rescue_Exponent` | 0.5 | 0.1 to 1 |
+| Level Matcher | Pair report minimum probability | `pairwise_output_threshold` | 0.01 | 0 to 1 |
+| | Cluster merge minimum probability | `clustering_merge_threshold` | 0.15 | 0 to 1 |
+| | Generate figures | `generate_figures` | on | on or off |
 
 ---
 
@@ -206,7 +282,7 @@ Level-Matcher/
 ├── Level_Matcher_GUI.py       # The only program users run (graphical interface)
 ├── requirements.txt           # Python dependencies
 ├── engine/                    # Programs the interface runs; not edited by users
-│   ├── Dataset_Parser.py      # Regex-based ENSDF log to JSON converter
+│   ├── Dataset_Parser.py      # ENSDF .ens to JSON converter
 │   ├── Feature_Engineer.py    # Physics engine (feature extraction, label logic, Scoring_Config)
 │   ├── Level_Matcher.py       # Main orchestration (training, inference, clustering)
 │   ├── Level_Clusterer.py     # Deterministic clique-constrained graph partitioning
@@ -249,6 +325,57 @@ Level-Matcher/
 6. **Cluster matched levels**: `engine/Level_Clusterer.py` consolidates pairwise matches into clique-consistent clusters written to `level_matcher_files/Output_Clustering_Results_XGBoost.txt`.
 7. **Review outputs**: `engine/Combined_Visualizer.py` renders level schemes and the cluster table to `level_matcher_files/` for visual audit (graphical interface: unless **Generate figures** is unticked under **Parameters**).
 8. **Validate parser output**: `python developer/validate_schema.py --json_dir <folder>` checks every dataset JSON file against ENSDF JSON Schema 1.0.0.
+9. **Developer dependencies**: schema validation needs `pip install jsonschema referencing`; nothing else beyond the runtime list is required.
+
+### 7.3 Inputs
+
+- One folder holding ENSDF `.ens` files, including the **adopted file**. The dataset letters (XREF) are read from the adopted file's X records; the graphical interface refuses a folder without it.
+- Each `.ens` file is matched to its XREF letter through the DSID field of its identification record. Files whose DSID matches no XREF entry are skipped and listed in the log; the adopted file itself is never matched.
+- L records become levels, G records become gamma transitions. Uncertainties are read from the ENSDF digit notation, relative intensities are normalized to 100, and `LT`/`GT` intensity limits are kept as limits.
+- At least two datasets must be selected for cross-dataset matching.
+
+### 7.4 Outputs and Report Formats
+
+The tool writes into one flat folder, `level_matcher_files`, inside the `raw` folder beside the browsed folder (browsed `S34/new` gives `S34/raw/level_matcher_files`). No subfolders are created and nothing is written into the browsed folder.
+
+| File | Content |
+| :--- | :--- |
+| `{nuclide}_{XREF text}.json` | Parsed datasets in ENSDF JSON Schema 1.0.0 format, one file per `.ens` file |
+| `Output_Level_Pairwise_Inference.txt` | Every level pair at or above the pair report threshold, one row per pair |
+| `Output_Clustering_Results_XGBoost.txt` | Clusters with anchor, members and match probabilities |
+| `parameters.json` | Parameter values used by the run (nested like the script variables) |
+| `Training_Metrics_Diagnostic.png` | Training diagnostics (only with **Generate figures**) |
+| `Input_Level_Scheme.png` | Level scheme of the selected datasets (only with **Generate figures**) |
+| `Output_Cluster_Scheme_XGBoost.png` | Cluster table figure (only with **Generate figures**) |
+
+The pair report lists one pair per row, a blank line between pairs:
+
+```text
+=== PAIRWISE INFERENCE RESULTS (>=1.0%) ===
+Model: XGBoost
+Total Level Pairs Found: 3130
+
+L_11545 <-> Q_11541 | Match Prob.: 84.0% | Features: Energy_Similarity=0.85, Spin_Similarity=1.00, Parity_Similarity=1.00, Specificity=1.00, Gamma_Pattern_Similarity=0.50
+```
+
+The cluster report shows the merge threshold in its header, then one block per cluster:
+
+```text
+=== FINAL CLUSTERING RESULTS: XGBoost (Merge Threshold: >=15%) ===
+Total Clusters: 125
+
+Cluster 1:
+  Anchor: L_2805 | E=2805.0±3.0 keV | Spin-Parity=2+
+  Members:
+    [L] L_2805: E=2805.0±3.0 keV, Spin-Parity=2+ (Anchor)
+    [Q] Q_2806: E=2806.3±0.9 keV, Spin-Parity=2+ (Match Probability: 97.4%)
+```
+
+The anchor is the member with the smallest energy uncertainty; members other than the anchor show the predicted match probability to the anchor.
+
+### 7.5 Settings File
+
+The graphical interface remembers the last folder and the parameter values changed from the defaults in `%APPDATA%\Level_Matcher\settings.json` (`last_workspace`, and a `parameters` object that also holds `generate_figures`). Delete that file, or press **Reset to Defaults** in the dialog, to return to the defaults.
 
 ---
 

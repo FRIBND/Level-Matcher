@@ -223,8 +223,6 @@ def perform_clustering_and_output(matching_level_pairs, model_instance, output_f
 
     # Write clustering results to both console and file
     clustering_output_lines = []
-    clustering_output_lines.append(f"=== FINAL CLUSTERING RESULTS ({model_name}) ===\n")
-    
     print(f"\n=== FINAL CLUSTERING RESULTS ({model_name}) ===")
     for i, cluster in enumerate(unique_clusters):
         # Select anchor as the level with smallest energy uncertainty (most precise measurement)
