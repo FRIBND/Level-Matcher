@@ -12,7 +12,7 @@ The first Physics-informed Machine Learning nuclear level matching tool designed
 
 Developed and refined through daily evaluation tasks at the Nuclear Data Group at the Facility for Rare Isotope Beams (FRIB).
 
-Built on the open-source XGBoost (Extreme Gradient Boosting) framework, **Level-Matcher** employs physics-informed feature engineering, gradient boosting model training, and pairwise inference to reconcile nuclear level schemes across multiple datasets.
+Built on the open-source XGBoost (Extreme Gradient Boosting) framework, **Level-Matcher** employs `physics-informed feature engineering`, `gradient boosting model training`, and `pairwise inference` to reconcile nuclear level schemes across multiple datasets.
 
 Integration roadmap: A production version will be incorporated into the Consistency Check and Evaluation Toolkit Java codes as part of the NSDD ENSDF Analysis and Utility Programs.
 
