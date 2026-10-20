@@ -248,7 +248,7 @@ class Level_Matcher_Interface:
         self.dataset_table.heading("levels", text="Levels", anchor="w")
         self.dataset_table.column("letter", width=int(70 * display_scale), stretch=False, anchor="w")
         self.dataset_table.column("reaction", width=int(300 * display_scale), stretch=False, anchor="w")
-        self.dataset_table.column("filename", width=int(380 * display_scale), stretch=True, anchor="w")
+        self.dataset_table.column("filename", width=int(360 * display_scale), stretch=True, anchor="w")
         self.dataset_table.column("levels", width=int(60 * display_scale), stretch=False, anchor="w")
         dataset_scrollbar = ttk.Scrollbar(dataset_frame, orient="vertical", command=self.dataset_table.yview)
         self.dataset_table.configure(yscrollcommand=dataset_scrollbar.set)
