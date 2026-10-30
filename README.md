@@ -1,6 +1,6 @@
 # Level-Matcher
 
-Part of the AI/ML Technical Innovation at the Nuclear Data Group at the Facility for Rare Isotope Beams (nucleardata@frib.msu.edu).
+Part of the Agent/ML Technical Development at the Nuclear Data Group at the Facility for Rare Isotope Beams (nucleardata@frib.msu.edu).
 
 Supported by the U.S. Department of Energy, Office of Science, Office of Nuclear Physics under Award Number DE-SC0016948.
 
@@ -59,7 +59,8 @@ Everything the tool writes - parsed JSON datasets, the pair report, the cluster 
 
 ## Development Timeline
 
-- 2026-04-19: Tested and refined on real-world ENSDF datasets <sup>34</sup>Cl, <sup>34</sup>S.
+- 2026-10-21: **Level-Matcher** was demonstrated at 26th Technical Meeting of the International Network of Nuclear Structure and Decay Data Evaluators (NSDD) at MSU.
+- 2026-04-19: Tested and refined on real-world ENSDF datasets <sup>34</sup>Cl and <sup>34</sup>S.
 - 2026-04-17: Introduced configurable parameters for feature correlation, model training diagnostics, and validation metrics.
 - 2026-01-05: End-to-end pipeline integration with five core components: dataset parsing, physics-informed feature extraction, synthetic feature-label generation, XGBoost model training and pairwise inference, constrained graph partitioning, and level-scheme visualization.
 - 2025-10-20: Foundational prototype: decision tree-based ranking framework (LightGBM) at [github.com/sunlijie-msu/Level-Matcher](https://github.com/sunlijie-msu/Level-Matcher).
